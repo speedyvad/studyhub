@@ -194,8 +194,8 @@ const mockPosts: Post[] = [
 
 export const useStore = create<StudyHubStore>((set, get) => ({
   // Auth
-  user: mockUser,
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
   login: (_email: string, _password: string) => {
     // Simulação de login
     set({ user: mockUser, isAuthenticated: true });

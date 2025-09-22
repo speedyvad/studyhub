@@ -37,60 +37,80 @@ function App() {
             {/* Public Routes */}
             <Route 
               path="/login" 
-              element={<Login />}
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
             />
             <Route 
               path="/register" 
-              element={<Register />}
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
             />
 
             {/* Protected Routes */}
             <Route 
               path="/dashboard" 
               element={
-                <Layout>
-                  <Dashboard />
-                </Layout>
+                <ProtectedRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
               } 
             />
             <Route 
               path="/tasks" 
               element={
-                <Layout>
-                  <Tasks />
-                </Layout>
+                <ProtectedRoute>
+                  <Layout>
+                    <Tasks />
+                  </Layout>
+                </ProtectedRoute>
               } 
             />
             <Route 
               path="/pomodoro" 
               element={
-                <Layout>
-                  <Pomodoro />
-                </Layout>
+                <ProtectedRoute>
+                  <Layout>
+                    <Pomodoro />
+                  </Layout>
+                </ProtectedRoute>
               } 
             />
             <Route 
               path="/community" 
               element={
-                <Layout>
-                  <Community />
-                </Layout>
+                <ProtectedRoute>
+                  <Layout>
+                    <Community />
+                  </Layout>
+                </ProtectedRoute>
               } 
             />
             <Route 
               path="/stats" 
               element={
-                <Layout>
-                  <Stats />
-                </Layout>
+                <ProtectedRoute>
+                  <Layout>
+                    <Stats />
+                  </Layout>
+                </ProtectedRoute>
               } 
             />
             <Route 
               path="/profile" 
               element={
-                <Layout>
-                  <Profile />
-                </Layout>
+                <ProtectedRoute>
+                  <Layout>
+                    <Profile />
+                  </Layout>
+                </ProtectedRoute>
               } 
             />
 

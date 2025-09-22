@@ -5,12 +5,54 @@
 @tailwind utilities;
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+  }
+  
   body {
     @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans;
-    margin: 0;
     min-height: 100vh;
     transition: background-color 0.3s ease, color 0.3s ease;
     scroll-behavior: smooth;
+  }
+  
+  /* Dark mode improvements */
+  .dark {
+    color-scheme: dark;
+  }
+  
+  .dark body {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+  
+  /* Melhorar contraste geral no modo dark */
+  .dark {
+    --text-primary: #f9fafb;
+    --text-secondary: #e5e7eb;
+    --text-tertiary: #d1d5db;
+    --text-muted: #cbd5e1;
+  }
+  
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: #f9fafb;
+  }
+  
+  .dark p, .dark span, .dark div {
+    color: #e5e7eb;
+  }
+  
+  #root {
+    width: 100%;
+    min-height: 100vh;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -45,7 +87,31 @@
   }
 
   .dark .text-gray-500 {
+    color: #d1d5db;
+  }
+  
+  .text-gray-600 {
+    color: #4b5563;
+  }
+  
+  .dark .text-gray-600 {
+    color: #e5e7eb;
+  }
+  
+  .text-gray-700 {
+    color: #374151;
+  }
+  
+  .dark .text-gray-700 {
+    color: #f3f4f6;
+  }
+  
+  .text-gray-400 {
     color: #9ca3af;
+  }
+  
+  .dark .text-gray-400 {
+    color: #cbd5e1;
   }
 
   /* Melhor contraste para bordas */
@@ -55,6 +121,14 @@
 
   .dark .border-gray-200 {
     border-color: #374151;
+  }
+  
+  .border-gray-300 {
+    border-color: #d1d5db;
+  }
+  
+  .dark .border-gray-300 {
+    border-color: #4b5563;
   }
 }
 
@@ -72,11 +146,79 @@
   }
   
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200;
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200 w-full;
+  }
+  
+  .dark .card {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
   }
   
   .input-field {
     @apply w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+  }
+  
+  .dark .input-field {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+  
+  .dark .input-field::placeholder {
+    color: #9ca3af;
+  }
+  
+  /* Melhorar contraste de textos coloridos no modo dark */
+  .dark .text-blue-500 {
+    color: #60a5fa;
+  }
+  
+  .dark .text-green-500 {
+    color: #4ade80;
+  }
+  
+  .dark .text-yellow-500 {
+    color: #facc15;
+  }
+  
+  .dark .text-purple-500 {
+    color: #a78bfa;
+  }
+  
+  .dark .text-red-500 {
+    color: #f87171;
+  }
+  
+  .dark .text-orange-500 {
+    color: #fb923c;
+  }
+  
+  /* Melhorar contraste da sidebar e navegação */
+  .dark .text-gray-900 {
+    color: #f9fafb;
+  }
+  
+  .dark .text-gray-100 {
+    color: #f9fafb;
+  }
+  
+  /* Melhorar contraste de links e botões */
+  .dark a {
+    color: #e5e7eb;
+  }
+  
+  .dark a:hover {
+    color: #f9fafb;
+  }
+  
+  /* Melhorar contraste de labels e textos pequenos */
+  .dark .text-sm {
+    color: #d1d5db;
+  }
+  
+  .dark .text-xs {
+    color: #cbd5e1;
   }
 
   /* Melhorias de responsividade */
@@ -105,6 +247,29 @@
   .sr-only {
     @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
     clip: rect(0, 0, 0, 0);
+  }
+
+  /* Correções de layout */
+  .grid {
+    display: grid;
+  }
+  
+  .grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  
+  @media (min-width: 1024px) {
+    .lg\\:grid-cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    
+    .lg\\:col-span-1 {
+      grid-column: span 1 / span 1;
+    }
+    
+    .lg\\:col-span-2 {
+      grid-column: span 2 / span 2;
+    }
   }
 }
 

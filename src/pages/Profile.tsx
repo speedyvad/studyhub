@@ -75,16 +75,16 @@ export default function Profile() {
   const monthlyPoints = monthlySessions.length * 25;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div>
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-text-primary">Perfil</h1>
         <p className="text-text-secondary">Gerencie suas informações e acompanhe seu progresso</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
         {/* Profile Card */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 w-full">
           <div className="card">
             <div className="text-center">
               {/* Avatar */}
@@ -226,7 +226,7 @@ export default function Profile() {
         </div>
 
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 w-full">
           {/* Favorite Subjects */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
