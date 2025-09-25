@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -70,6 +70,20 @@ export default function EnhancedTaskForm({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [newTag, setNewTag] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Atualizar formulário quando initialData mudar
+  useEffect(() => {
+    if (isEditing && initialData) {
+      setFormData({
+        title: initialData.title || '',
+        description: initialData.description || '',
+        subject: initialData.subject || 'Matemática',
+        priority: initialData.priority || 'medium',
+        dueDate: initialData.dueDate || '',
+        tags: initialData.tags || []
+      });
+    }
+  }, [initialData, isEditing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

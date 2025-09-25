@@ -334,7 +334,7 @@ app.get('/api/tasks', requireAuth, async (req, res) => {
 // Criar nova tarefa
 app.post('/api/tasks', requireAuth, async (req, res) => {
   try {
-    const { title, description, category, priority, dueDate } = req.body;
+    const { title, description, subject, priority, dueDate } = req.body;
 
     if (!title) {
       return res.status(400).json({
@@ -354,7 +354,7 @@ app.post('/api/tasks', requireAuth, async (req, res) => {
       data: {
         title,
         description: description || '',
-        subject: category || 'geral',
+        subject: subject || 'geral',
         priority: priorityMap[priority] || 'MEDIUM',
         completed: false,
         dueDate: dueDate ? new Date(dueDate) : null,
@@ -518,7 +518,7 @@ app.get('/api/tasks/stats', requireAuth, async (req, res) => {
 // Iniciar sessão Pomodoro
 app.post('/api/pomodoro/start', requireAuth, async (req, res) => {
   try {
-    const { duration = 25, taskId } = req.body; // 25 minutos por padrão
+    const { duration = 25 } = req.body; // 25 minutos por padrão
     
     const session = await prisma.pomodoroSession.create({
       data: {
@@ -607,7 +607,7 @@ app.get('/api/pomodoro/sessions', requireAuth, async (req, res) => {
     
     const sessions = await prisma.pomodoroSession.findMany({
       where: { userId: req.user.userId },
-      orderBy: { startedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: parseInt(limit),
       skip: parseInt(offset)
     });
@@ -677,6 +677,210 @@ app.get('/api/pomodoro/stats', requireAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao obter estatísticas Pomodoro:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// ==================== ROTAS DE GRUPOS ====================
+
+// Listar grupos do usuário
+app.get('/api/groups', requireAuth, async (req, res) => {
+  try {
+    const groups = await prisma.taskGroup.findMany({
+      where: { userId: req.user.userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { tasks: true }
+        }
+      }
+    });
+
+    // Adicionar taskCount a cada grupo
+    const groupsWithCount = groups.map(group => ({
+      ...group,
+      taskCount: group._count.tasks
+    }));
+
+    res.json({
+      success: true,
+      data: { groups: groupsWithCount }
+    });
+  } catch (error) {
+    console.error('Erro ao listar grupos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Criar grupo
+app.post('/api/groups', requireAuth, async (req, res) => {
+  try {
+    const { name, description, color, icon } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nome do grupo é obrigatório'
+      });
+    }
+
+    const group = await prisma.taskGroup.create({
+      data: {
+        name,
+        description: description || '',
+        color: color || 'blue',
+        icon: icon || 'folder',
+        userId: req.user.userId
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Grupo criado com sucesso!',
+      data: { group }
+    });
+  } catch (error) {
+    console.error('Erro ao criar grupo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Atualizar grupo
+app.put('/api/groups/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, color, icon } = req.body;
+
+    const existingGroup = await prisma.taskGroup.findFirst({
+      where: { id, userId: req.user.userId }
+    });
+
+    if (!existingGroup) {
+      return res.status(404).json({
+        success: false,
+        message: 'Grupo não encontrado'
+      });
+    }
+
+    const group = await prisma.taskGroup.update({
+      where: { id },
+      data: {
+        name: name || existingGroup.name,
+        description: description !== undefined ? description : existingGroup.description,
+        color: color || existingGroup.color,
+        icon: icon || existingGroup.icon
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Grupo atualizado com sucesso!',
+      data: { group }
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar grupo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Excluir grupo
+app.delete('/api/groups/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existingGroup = await prisma.taskGroup.findFirst({
+      where: { id, userId: req.user.userId }
+    });
+
+    if (!existingGroup) {
+      return res.status(404).json({
+        success: false,
+        message: 'Grupo não encontrado'
+      });
+    }
+
+    await prisma.taskGroup.delete({
+      where: { id }
+    });
+
+    res.json({
+      success: true,
+      message: 'Grupo excluído com sucesso!'
+    });
+  } catch (error) {
+    console.error('Erro ao excluir grupo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Listar tarefas de um grupo
+app.get('/api/groups/:id/tasks', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const tasks = await prisma.task.findMany({
+      where: { 
+        userId: req.user.userId,
+        groupId: id 
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: { tasks }
+    });
+  } catch (error) {
+    console.error('Erro ao listar tarefas do grupo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// ==================== ROTAS DE UPLOAD ====================
+
+// Upload de foto de perfil
+app.post('/api/upload/avatar', requireAuth, async (req, res) => {
+  try {
+    const { avatarUrl } = req.body;
+
+    if (!avatarUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'URL do avatar é obrigatória'
+      });
+    }
+
+    // Atualizar avatar do usuário
+    const user = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { avatarUrl }
+    });
+
+    res.json({
+      success: true,
+      message: 'Avatar atualizado com sucesso!',
+      data: { user }
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar avatar:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'

@@ -1,6 +1,7 @@
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { 
   Play, 
   CheckSquare, 
@@ -11,19 +12,46 @@ import {
   Star,
   Target
 } from 'lucide-react';
+import tasksApi from '../lib/tasksApi';
+import pomodoroApi from '../lib/pomodoroApi';
 
 export default function Dashboard() {
-  const { user, tasks, completedSessions, achievements, posts } = useStore();
+  const { user } = useStore();
+  const [tasks, setTasks] = useState([]);
+  const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0 });
+  const [pomodoroStats, setPomodoroStats] = useState({ totalSessions: 0, todaySessions: 0, totalHours: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [tasksResponse, tasksStatsResponse, pomodoroStatsResponse] = await Promise.all([
+          tasksApi.getTasks(),
+          tasksApi.getStats(),
+          pomodoroApi.getStats()
+        ]);
+        
+        setTasks(tasksResponse.data.tasks || []);
+        setStats(tasksStatsResponse.data);
+        setPomodoroStats(pomodoroStatsResponse.data);
+      } catch (error) {
+        console.error('Erro ao carregar dados do dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
 
   const pendingTasks = tasks.filter(task => !task.completed);
   const completedTasksToday = tasks.filter(task => 
     task.completed && 
     new Date(task.createdAt).toDateString() === new Date().toDateString()
   );
-  const sessionsToday = completedSessions.filter(session => 
-    new Date(session.timestamp).toDateString() === new Date().toDateString()
-  );
-  const unlockedAchievements = achievements.filter(achievement => achievement.unlocked);
 
   return (
     <motion.div 
@@ -221,7 +249,7 @@ export default function Dashboard() {
                 <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-2">
                   <Clock className="w-6 h-6 text-primary" />
                 </div>
-                <p className="text-2xl font-bold text-text-primary">{sessionsToday.length}</p>
+                <p className="text-2xl font-bold text-text-primary">{pomodoroStats.todaySessions}</p>
                 <p className="text-sm text-text-secondary">Pomodoros</p>
               </div>
               <div className="text-center">
@@ -235,7 +263,7 @@ export default function Dashboard() {
                 <div className="w-12 h-12 bg-gamification-100 rounded-xl flex items-center justify-center mx-auto mb-2">
                   <Star className="w-6 h-6 text-gamification" />
                 </div>
-                <p className="text-2xl font-bold text-text-primary">{sessionsToday.length * 25}</p>
+                <p className="text-2xl font-bold text-text-primary">{pomodoroStats.todaySessions * 25}</p>
                 <p className="text-sm text-text-secondary">Pontos</p>
               </div>
               <div className="text-center">
@@ -243,7 +271,7 @@ export default function Dashboard() {
                   <TrendingUp className="w-6 h-6 text-purple-600" />
                 </div>
                 <p className="text-2xl font-bold text-text-primary">
-                  {((sessionsToday.length * 25) / 60).toFixed(1)}h
+                  {pomodoroStats.totalHours.toFixed(1)}h
                 </p>
                 <p className="text-sm text-text-secondary">Estudadas</p>
               </div>
@@ -275,7 +303,7 @@ export default function Dashboard() {
               <h3 className="font-semibold text-text-primary">Conquistas</h3>
             </div>
             <div className="space-y-3">
-              {unlockedAchievements.slice(0, 3).map((achievement) => (
+              {[].slice(0, 3).map((achievement) => (
                 <div key={achievement.id} className="flex items-center space-x-3 p-3 bg-gamification-50 rounded-lg">
                   <span className="text-2xl">{achievement.icon}</span>
                   <div>
@@ -284,7 +312,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))}
-              {unlockedAchievements.length === 0 && (
+              {true && (
                 <p className="text-sm text-text-secondary text-center py-4">
                   Complete tarefas para desbloquear conquistas!
                 </p>
@@ -304,23 +332,24 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="space-y-3">
-              {posts.slice(0, 2).map((post) => (
-                <div key={post.id} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <img
-                      src={post.author.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=24&h=24&fit=crop&crop=face'}
-                      alt={post.author.name}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                    <span className="font-medium text-text-primary text-sm">{post.author.name}</span>
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-primary text-xs font-semibold">C</span>
                   </div>
-                  <p className="text-sm text-text-secondary line-clamp-2">{post.content}</p>
-                  <div className="flex items-center space-x-4 mt-2 text-xs text-text-secondary">
-                    <span>❤️ {post.likes}</span>
-                    <span>💬 {post.comments}</span>
-                  </div>
+                  <span className="font-medium text-text-primary text-sm">Comunidade</span>
                 </div>
-              ))}
+                <p className="text-sm text-text-secondary line-clamp-2">
+                  Conecte-se com outros estudantes e compartilhe conhecimento!
+                </p>
+                <div className="flex items-center space-x-4 mt-2 text-xs text-text-secondary">
+                  <span>❤️ 0</span>
+                  <span>💬 0</span>
+                </div>
+              </div>
+              <p className="text-sm text-text-secondary text-center py-4">
+                Acesse a comunidade para ver posts recentes
+              </p>
             </div>
           </div>
         </div>

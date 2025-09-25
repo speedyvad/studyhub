@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -17,6 +17,7 @@ import EnhancedFeed from '../components/EnhancedFeed';
 import GroupCard from '../components/GroupCard';
 import CreateGroupModal from '../components/CreateGroupModal';
 import AdvancedSearch from '../components/AdvancedSearch';
+import communityApi, { Post, Group } from '../lib/communityApi';
 
 interface Group {
   id: string;

@@ -6,8 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
-import Pomodoro from './pages/Pomodoro';
-import Community from './pages/EnhancedCommunity';
+import FocusSession from './pages/FocusSession';
+import Community from './pages/Community';
 import Stats from './pages/Stats';
 import Profile from './pages/Profile';
 import AIQuestions from './pages/AIQuestions';
@@ -80,7 +80,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Pomodoro />
+                    <FocusSession />
                   </Layout>
                 </ProtectedRoute>
               } 

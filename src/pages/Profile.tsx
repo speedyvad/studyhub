@@ -14,15 +14,19 @@ import {
   Mail,
   User
 } from 'lucide-react';
+import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
+import uploadApi from '../lib/uploadApi';
+import toast from 'react-hot-toast';
 
 export default function Profile() {
-  const { user, achievements, tasks, completedSessions } = useStore();
+  const { user, achievements, tasks, completedSessions, updateUser } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     name: user?.name || '',
     bio: user?.bio || '',
     favoriteSubjects: user?.favoriteSubjects || []
   });
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
 
   const handleSave = () => {
     // Aqui você salvaria os dados no backend
@@ -35,7 +39,55 @@ export default function Profile() {
       bio: user?.bio || '',
       favoriteSubjects: user?.favoriteSubjects || []
     });
+    setSelectedPhoto(null);
     setIsEditing(false);
+  };
+
+  const handlePhotoSelect = async (file: File) => {
+    setSelectedPhoto(file);
+    
+    try {
+      // Converter arquivo para base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string;
+        
+        // Fazer upload para o backend
+        const response = await uploadApi.uploadAvatar(base64);
+        
+        if (response.success) {
+          toast.success('Foto de perfil atualizada!');
+          // Atualizar o usuário no store
+          updateUser({ avatar: base64 });
+        } else {
+          toast.error('Erro ao atualizar foto de perfil');
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Erro ao fazer upload da foto:', error);
+      toast.error('Erro ao fazer upload da foto');
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    setSelectedPhoto(null);
+    
+    try {
+      // Remover avatar (usar URL padrão)
+      const response = await uploadApi.uploadAvatar('');
+      
+      if (response.success) {
+        toast.success('Foto removida');
+        // Atualizar o usuário no store
+        updateUser({ avatar: undefined });
+      } else {
+        toast.error('Erro ao remover foto');
+      }
+    } catch (error) {
+      console.error('Erro ao remover foto:', error);
+      toast.error('Erro ao remover foto');
+    }
   };
 
   const toggleSubject = (subject: string) => {
@@ -88,16 +140,23 @@ export default function Profile() {
           <div className="card">
             <div className="text-center">
               {/* Avatar */}
-              <div className="relative inline-block mb-4">
-                <img
-                  src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&crop=face'}
-                  alt={user?.name}
-                  className="w-24 h-24 rounded-full object-cover mx-auto"
-                />
-                {isEditing && (
-                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-primary-600 transition-colors duration-200">
-                    <Camera className="w-4 h-4" />
-                  </button>
+              <div className="mb-4">
+                {isEditing ? (
+                  <ProfilePhotoUpload
+                    currentAvatar={user?.avatar}
+                    onPhotoSelect={handlePhotoSelect}
+                    onPhotoRemove={handlePhotoRemove}
+                    size="lg"
+                    className="mx-auto"
+                  />
+                ) : (
+                  <div className="relative inline-block">
+                    <img
+                      src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&crop=face'}
+                      alt={user?.name}
+                      className="w-24 h-24 rounded-full object-cover mx-auto"
+                    />
+                  </div>
                 )}
               </div>
 

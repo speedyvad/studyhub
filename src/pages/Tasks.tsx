@@ -6,7 +6,9 @@ import {
   X, 
   Search,
   BookOpen,
-  Flag
+  Flag,
+  Folder,
+  Settings
 } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -15,10 +17,13 @@ import DraggableTask from '../components/DraggableTask';
 import TaskContainer from '../components/TaskContainer';
 import TaskSkeleton from '../components/TaskSkeleton';
 import EnhancedTaskForm from '../components/EnhancedTaskForm';
+import GroupManager from '../components/GroupManager';
 import { useLoading } from '../hooks/useLoading';
 import toast from 'react-hot-toast';
 import tasksApi from '../lib/tasksApi';
+import groupsApi from '../lib/groupsApi';
 import type { Task, TaskStats } from '../types/task';
+import type { TaskGroup } from '../types/group';
 
 type Priority = 'low' | 'medium' | 'high';
 type FilterType = 'all' | 'pending' | 'completed';
@@ -40,6 +45,9 @@ export default function Tasks() {
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [showGroupManager, setShowGroupManager] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [groups, setGroups] = useState<TaskGroup[]>([]);
   const { withLoading } = useLoading(false, 800);
 
   const sensors = useSensors(
@@ -69,10 +77,23 @@ export default function Tasks() {
     }
   };
 
+  // Carregar grupos
+  const loadGroups = async () => {
+    try {
+      const response = await groupsApi.getGroups();
+      if (response.success) {
+        setGroups(response.data.groups);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar grupos:', error);
+    }
+  };
+
   // Carregar dados iniciais
   useEffect(() => {
     if (isAuthenticated) {
       loadTasks();
+      loadGroups();
     }
   }, [isAuthenticated]);
 
@@ -180,14 +201,72 @@ export default function Tasks() {
           <h1 className="text-3xl font-bold text-text-primary">Tarefas</h1>
           <p className="text-text-secondary">Organize seus estudos e mantenha o foco</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Nova Tarefa</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowGroupManager(true)}
+            className="btn-outline flex items-center space-x-2"
+          >
+            <Settings className="w-4 h-4" />
+            <span>Grupos</span>
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Nova Tarefa</span>
+          </button>
+        </div>
       </div>
+
+      {/* Group Selector */}
+      {groups.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Filtrar por Grupo</h3>
+            <button
+              onClick={() => setSelectedGroupId(null)}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                selectedGroupId === null
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              Todas as Tarefas
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {groups.map((group) => {
+              const colorConfig = {
+                blue: 'bg-blue-100 text-blue-700 border-blue-200',
+                green: 'bg-green-100 text-green-700 border-green-200',
+                purple: 'bg-purple-100 text-purple-700 border-purple-200',
+                pink: 'bg-pink-100 text-pink-700 border-pink-200',
+                orange: 'bg-orange-100 text-orange-700 border-orange-200',
+                red: 'bg-red-100 text-red-700 border-red-200',
+              }[group.color] || 'bg-gray-100 text-gray-700 border-gray-200';
+              
+              return (
+                <button
+                  key={group.id}
+                  onClick={() => setSelectedGroupId(selectedGroupId === group.id ? null : group.id)}
+                  className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                    selectedGroupId === group.id
+                      ? `${colorConfig} border-opacity-100`
+                      : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Folder className="w-4 h-4" />
+                    <span className="font-medium">{group.name}</span>
+                    <span className="text-xs opacity-75">({group.taskCount})</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -284,7 +363,17 @@ export default function Tasks() {
           setEditingTask(null);
         }}
         onSubmit={handleSubmit}
-        initialData={editingTask ? tasks.find(t => t.id === editingTask) : undefined}
+        initialData={editingTask ? (() => {
+          const task = tasks.find(t => t.id === editingTask);
+          return task ? {
+            title: task.title,
+            description: task.description || '',
+            subject: task.subject,
+            priority: task.priority.toLowerCase() as 'low' | 'medium' | 'high',
+            dueDate: task.dueDate || '',
+            tags: [] // Por enquanto, sem tags
+          } : undefined;
+        })() : undefined}
         isEditing={!!editingTask}
       />
 
@@ -314,124 +403,151 @@ export default function Tasks() {
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pending Tasks */}
-            <TaskContainer
-              id="pending-tasks"
-              title="Tarefas Pendentes"
-              className="lg:col-span-1"
-            >
-              <SortableContext items={filteredTasks.filter(task => !task.completed).map(task => task.id)} strategy={verticalListSortingStrategy}>
-                <AnimatePresence>
-                  {filteredTasks.filter(task => !task.completed).map((task) => (
-                    <DraggableTask
-                      key={task.id}
-                      task={task}
-                      onToggle={handleToggle}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </AnimatePresence>
-              </SortableContext>
-            {filteredTasks.filter(task => !task.completed).length === 0 && (
-              <motion.div 
-                className="text-center py-8"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                >
-                  <Flag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                </motion.div>
-                <p className="text-gray-600 dark:text-gray-400">Nenhuma tarefa pendente!</p>
-                <p className="text-sm text-gray-500 dark:text-gray-500">Que tal adicionar uma nova?</p>
-              </motion.div>
-            )}
-          </TaskContainer>
-
-          {/* Completed Tasks */}
-          <TaskContainer
-            id="completed-tasks"
-            title="Tarefas Concluídas"
-            className="lg:col-span-1"
-          >
-            <SortableContext items={filteredTasks.filter(task => task.completed).map(task => task.id)} strategy={verticalListSortingStrategy}>
-              <AnimatePresence>
-                {filteredTasks.filter(task => task.completed).map((task) => (
-                  <DraggableTask
-                    key={task.id}
-                    task={task}
-                    onToggle={handleToggle}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </AnimatePresence>
-            </SortableContext>
-            {filteredTasks.filter(task => task.completed).length === 0 && (
-              <motion.div 
-                className="text-center py-8"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                >
-                  <Check className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                </motion.div>
-                <p className="text-gray-600 dark:text-gray-400">Nenhuma tarefa concluída ainda!</p>
-                <p className="text-sm text-gray-500 dark:text-gray-500">Complete suas tarefas para vê-las aqui.</p>
-              </motion.div>
-            )}
-          </TaskContainer>
-        </div>
-
-        {/* Empty State */}
-        {filteredTasks.length === 0 && (
           <motion.div 
-            className="card text-center py-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            className={`grid gap-6 ${filter === 'all' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}
+            layout
           >
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            >
-              <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            </motion.div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              {searchTerm || selectedSubject !== 'all' || filter !== 'all' 
-                ? 'Nenhuma tarefa encontrada' 
-                : 'Nenhuma tarefa criada ainda'
-              }
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {searchTerm || selectedSubject !== 'all' || filter !== 'all'
-                ? 'Tente ajustar os filtros ou criar uma nova tarefa.'
-                : 'Comece criando sua primeira tarefa para organizar seus estudos.'
-              }
-            </p>
-            {!searchTerm && selectedSubject === 'all' && filter === 'all' && (
-              <motion.button
-                onClick={() => setShowAddForm(true)}
-                className="btn-primary"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+            {/* Pending Tasks - Only show if filter is 'all' or 'pending' */}
+            {filter !== 'completed' && (
+              <motion.div
+                className="space-y-3"
+                layout
+                transition={{ duration: 0.3, ease: "easeInOut" }}
               >
-                Criar Primeira Tarefa
-              </motion.button>
+                <TaskContainer
+                  id="pending-tasks"
+                  title="Tarefas Pendentes"
+                  className="w-full"
+                >
+                  <SortableContext items={filteredTasks.filter(task => !task.completed).map(task => task.id)} strategy={verticalListSortingStrategy}>
+                    <AnimatePresence mode="popLayout">
+                      {filteredTasks.filter(task => !task.completed).map((task) => (
+                        <DraggableTask
+                          key={task.id}
+                          task={task}
+                          onToggle={handleToggle}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </SortableContext>
+                  {filteredTasks.filter(task => !task.completed).length === 0 && (
+                    <motion.div 
+                      className="text-center py-8"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <motion.div
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                      >
+                        <Flag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      </motion.div>
+                      <p className="text-gray-600 dark:text-gray-400">Nenhuma tarefa pendente!</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">Que tal adicionar uma nova?</p>
+                    </motion.div>
+                  )}
+                </TaskContainer>
+              </motion.div>
+            )}
+
+            {/* Completed Tasks - Only show if filter is 'all' or 'completed' */}
+            {filter !== 'pending' && (
+              <motion.div
+                className="space-y-3"
+                layout
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                <TaskContainer
+                  id="completed-tasks"
+                  title="Tarefas Concluídas"
+                  className="w-full"
+                >
+                  <SortableContext items={filteredTasks.filter(task => task.completed).map(task => task.id)} strategy={verticalListSortingStrategy}>
+                    <AnimatePresence mode="popLayout">
+                      {filteredTasks.filter(task => task.completed).map((task) => (
+                        <DraggableTask
+                          key={task.id}
+                          task={task}
+                          onToggle={handleToggle}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </SortableContext>
+                  {filteredTasks.filter(task => task.completed).length === 0 && (
+                    <motion.div 
+                      className="text-center py-8"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                      >
+                        <Check className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      </motion.div>
+                      <p className="text-gray-600 dark:text-gray-400">Nenhuma tarefa concluída ainda!</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">Complete suas tarefas para vê-las aqui.</p>
+                    </motion.div>
+                  )}
+                </TaskContainer>
+              </motion.div>
             )}
           </motion.div>
-        )}
+
+          {/* Empty State */}
+          {filteredTasks.length === 0 && (
+            <motion.div 
+              className="card text-center py-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+              >
+                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              </motion.div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                {searchTerm || selectedSubject !== 'all' || filter !== 'all' 
+                  ? 'Nenhuma tarefa encontrada' 
+                  : 'Nenhuma tarefa criada ainda'
+                }
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {searchTerm || selectedSubject !== 'all' || filter !== 'all'
+                  ? 'Tente ajustar os filtros ou criar uma nova tarefa.'
+                  : 'Comece criando sua primeira tarefa para organizar seus estudos.'
+                }
+              </p>
+              {!searchTerm && selectedSubject === 'all' && filter === 'all' && (
+                <motion.button
+                  onClick={() => setShowAddForm(true)}
+                  className="btn-primary"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Criar Primeira Tarefa
+                </motion.button>
+              )}
+            </motion.div>
+          )}
         </DndContext>
       )}
+
+      {/* Group Manager */}
+      <GroupManager
+        isOpen={showGroupManager}
+        onClose={() => setShowGroupManager(false)}
+        onGroupSelect={setSelectedGroupId}
+        selectedGroupId={selectedGroupId}
+      />
     </div>
   );
 }

@@ -13,7 +13,7 @@ import {
   X,
   Brain
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AchievementNotification from './AchievementNotification';
 import ThemeToggle from './ThemeToggle';
 
@@ -24,7 +24,7 @@ interface LayoutProps {
 const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/tasks', icon: CheckSquare, label: 'Tarefas' },
-  { path: '/pomodoro', icon: Timer, label: 'Pomodoro' },
+  { path: '/pomodoro', icon: Timer, label: 'Sessão de Foco' },
   { path: '/ai-questions', icon: Brain, label: 'IA Questões', premium: true },
   { path: '/community', icon: Users, label: 'Comunidade' },
   { path: '/stats', icon: BarChart3, label: 'Estatísticas' },
@@ -35,6 +35,21 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useStore();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Salvar estado da sidebar no localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    if (saved !== null) {
+      setSidebarCollapsed(JSON.parse(saved));
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+  };
 
   const handleLogout = () => {
     logout();
@@ -51,41 +66,53 @@ export default function Layout({ children }: LayoutProps) {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+      <div className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-800 shadow-lg transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      } ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               <span className="text-white text-lg">📚</span>
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-gray-100">StudyHub</span>
+            {!sidebarCollapsed && (
+              <span className="text-xl font-bold text-gray-900 dark:text-gray-100">StudyHub</span>
+            )}
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={toggleSidebar}
+              className="hidden lg:block text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* User info */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
+        <div className={`border-b border-gray-200 dark:border-gray-700 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
             <img
               src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face'}
               alt={user?.name}
               className="w-10 h-10 rounded-full object-cover"
             />
-            <div>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{user?.name}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{user?.points} pontos</p>
-            </div>
+            {!sidebarCollapsed && (
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{user?.name}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{user?.points} pontos</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className={`flex-1 py-6 space-y-2 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -95,17 +122,22 @@ export default function Layout({ children }: LayoutProps) {
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors duration-200 ${
+                className={`flex items-center rounded-lg transition-colors duration-200 ${
+                  sidebarCollapsed ? 'justify-center px-3 py-3' : 'justify-between px-4 py-3'
+                } ${
                   isActive
                     ? 'bg-blue-500 text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
+                title={sidebarCollapsed ? item.label : undefined}
               >
-                <div className="flex items-center space-x-3">
+                <div className={`flex items-center ${sidebarCollapsed ? '' : 'space-x-3'}`}>
                   <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
+                  {!sidebarCollapsed && (
+                    <span className="font-medium">{item.label}</span>
+                  )}
                 </div>
-                {item.premium && (
+                {!sidebarCollapsed && item.premium && (
                   <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full font-medium">
                     PRO
                   </span>
@@ -116,23 +148,35 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
 
         {/* Theme toggle and Logout */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Tema</span>
-            <ThemeToggle />
-          </div>
+        <div className={`border-t border-gray-200 dark:border-gray-700 space-y-3 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
+          {!sidebarCollapsed && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Tema</span>
+              <ThemeToggle />
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="flex justify-center">
+              <ThemeToggle />
+            </div>
+          )}
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-3 w-full px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 rounded-lg transition-colors duration-200"
+            className={`flex items-center w-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 rounded-lg transition-colors duration-200 ${
+              sidebarCollapsed ? 'justify-center px-3 py-3' : 'space-x-3 px-4 py-3'
+            }`}
+            title={sidebarCollapsed ? 'Sair' : undefined}
           >
             <LogOut className="w-5 h-5" />
-            <span className="font-medium">Sair</span>
+            {!sidebarCollapsed && <span className="font-medium">Sair</span>}
           </button>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+        sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+      }`}>
         {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <button

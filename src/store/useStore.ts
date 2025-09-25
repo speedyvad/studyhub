@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api } from '../lib/api';
+import authApi from '../lib/authApi';
 
 export interface User {
   id: string;
@@ -55,6 +55,7 @@ interface StudyHubStore {
   isAuthenticated: boolean;
   login: (email: string, password: string) => void;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
   register: (name: string, email: string, password: string) => void;
 
   // Tasks
@@ -90,16 +91,6 @@ interface StudyHubStore {
   };
 }
 
-const mockUser: User = {
-  id: '1',
-  name: 'João Silva',
-  email: 'joao@email.com',
-  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-  bio: 'Estudante de Engenharia apaixonado por tecnologia',
-  points: 1250,
-  studyHours: 45.5,
-  favoriteSubjects: ['Matemática', 'Física', 'Programação']
-};
 
 const mockTasks: Task[] = [
   {
@@ -197,23 +188,55 @@ export const useStore = create<StudyHubStore>((set, get) => ({
   // Auth
   user: null,
   isAuthenticated: false,
-  login: (_email: string, _password: string) => {
-    // Simulação de login
-    set({ user: mockUser, isAuthenticated: true });
+  login: async (email: string, password: string) => {
+    try {
+      const response = await authApi.login(email, password);
+      if (response.success) {
+        const userData: User = {
+          id: response.data.user.id,
+          name: response.data.user.name,
+          email: response.data.user.email,
+          points: response.data.user.points,
+          studyHours: response.data.user.studyHours,
+          favoriteSubjects: []
+        };
+        localStorage.setItem('token', response.data.token);
+        set({ user: userData, isAuthenticated: true });
+      }
+    } catch (error) {
+      console.error('Erro no login:', error);
+      throw error;
+    }
   },
   logout: () => {
+    localStorage.removeItem('token');
     set({ user: null, isAuthenticated: false });
   },
-  register: (name: string, _email: string, _password: string) => {
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email: _email,
-      points: 0,
-      studyHours: 0,
-      favoriteSubjects: []
-    };
-    set({ user: newUser, isAuthenticated: true });
+
+  updateUser: (userData: Partial<User>) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...userData } : null
+    }));
+  },
+  register: async (name: string, email: string, password: string) => {
+    try {
+      const response = await authApi.register(name, email, password);
+      if (response.success) {
+        const userData: User = {
+          id: response.data.user.id,
+          name: response.data.user.name,
+          email: response.data.user.email,
+          points: response.data.user.points,
+          studyHours: response.data.user.studyHours,
+          favoriteSubjects: []
+        };
+        localStorage.setItem('token', response.data.token);
+        set({ user: userData, isAuthenticated: true });
+      }
+    } catch (error) {
+      console.error('Erro no registro:', error);
+      throw error;
+    }
   },
 
   // Tasks

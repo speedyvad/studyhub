@@ -1,4 +1,5 @@
 import { useStore } from '../store/useStore';
+import { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -25,11 +26,39 @@ import {
   Star,
   Award
 } from 'lucide-react';
+import tasksApi from '../lib/tasksApi';
+import pomodoroApi from '../lib/pomodoroApi';
 
 export default function Stats() {
-  const { user, tasks, completedSessions, getStudyStats } = useStore();
+  const { user } = useStore();
+  const [tasks, setTasks] = useState([]);
+  const [pomodoroStats, setPomodoroStats] = useState({ totalSessions: 0, totalHours: 0, todaySessions: 0 });
+  const [loading, setLoading] = useState(true);
 
-  // Dados para gráficos
+  useEffect(() => {
+    const loadStatsData = async () => {
+      try {
+        setLoading(true);
+        const [tasksResponse, pomodoroStatsResponse] = await Promise.all([
+          tasksApi.getTasks(),
+          pomodoroApi.getStats()
+        ]);
+        
+        setTasks(tasksResponse.data.tasks || []);
+        setPomodoroStats(pomodoroStatsResponse.data);
+      } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      loadStatsData();
+    }
+  }, [user]);
+
+  // Dados para gráficos (simulados por enquanto)
   const weeklyData = [
     { day: 'Seg', hours: 2.5, sessions: 6, points: 150 },
     { day: 'Ter', hours: 3.2, sessions: 8, points: 200 },
@@ -52,7 +81,11 @@ export default function Stats() {
 
   const COLORS = ['#0EA5E9', '#22C55E', '#FACC15', '#F97316', '#8B5CF6', '#EC4899'];
 
-  const stats = getStudyStats();
+  const stats = {
+    totalHours: pomodoroStats.totalHours,
+    totalSessions: pomodoroStats.totalSessions,
+    streak: 0 // Por enquanto, sem streak
+  };
 
   // Dados de progresso mensal
   const monthlyProgress = [

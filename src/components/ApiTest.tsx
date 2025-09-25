@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 import PomodoroTest from './PomodoroTest';
+import CommunityTest from './CommunityTest';
 
 export default function ApiTest() {
   const [result, setResult] = useState<any>(null);
@@ -194,9 +195,13 @@ export default function ApiTest() {
         )}
       </div>
 
-      <div className="mt-8">
-        <PomodoroTest />
-      </div>
+          <div className="mt-8">
+            <PomodoroTest />
+          </div>
+
+          <div className="mt-8">
+            <CommunityTest />
+          </div>
     </div>
   );
 }
