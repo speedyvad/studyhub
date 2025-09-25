@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
 import { Check, Edit3, Trash2, GripVertical } from 'lucide-react';
-import type { Task } from '../store/useStore';
+import type { Task } from '../types/task';
 
 interface DraggableTaskProps {
   task: Task;

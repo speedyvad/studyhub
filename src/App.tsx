@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStore } from './store/useStore';
-import Layout from './components/Layout';
+import Layout from './components/Layout'; 
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -11,6 +11,7 @@ import Community from './pages/EnhancedCommunity';
 import Stats from './pages/Stats';
 import Profile from './pages/Profile';
 import AIQuestions from './pages/AIQuestions';
+import Admin from './pages/Admin';
 import ToastProvider from './components/ToastProvider';
 
 // Create a client
@@ -121,6 +122,14 @@ function App() {
                   <Layout>
                     <AIQuestions />
                   </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <Admin />
                 </ProtectedRoute>
               } 
             />

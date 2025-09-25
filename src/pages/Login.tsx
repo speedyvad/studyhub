@@ -16,12 +16,35 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simular delay de login
-    setTimeout(() => {
-      login(email, password);
+    try {
+      // Fazer login real com a API
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Salvar token e dados do usuário
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        
+        // Atualizar o store
+        login(email, password);
+        navigate('/dashboard');
+      } else {
+        alert(data.message || 'Erro no login');
+      }
+    } catch (error) {
+      console.error('Erro no login:', error);
+      alert('Erro ao conectar com o servidor');
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    }
   };
 
   return (
@@ -84,6 +107,7 @@ export default function Login() {
               </div>
             </div>
 
+
             <button
               type="submit"
               disabled={isLoading}
@@ -116,6 +140,7 @@ export default function Login() {
             </p>
           </div>
         </div>
+
       </div>
     </div>
   );

@@ -25,12 +25,35 @@ export default function Register() {
     
     setIsLoading(true);
     
-    // Simular delay de registro
-    setTimeout(() => {
-      register(name, email, password);
+    try {
+      // Fazer registro real com a API
+      const response = await fetch('http://localhost:3001/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Salvar token e dados do usuário
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        
+        // Atualizar o store
+        register(name, email, password);
+        navigate('/dashboard');
+      } else {
+        alert(data.message || 'Erro no registro');
+      }
+    } catch (error) {
+      console.error('Erro no registro:', error);
+      alert('Erro ao conectar com o servidor');
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    }
   };
 
   return (

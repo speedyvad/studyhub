@@ -17,6 +17,8 @@ import TaskSkeleton from '../components/TaskSkeleton';
 import EnhancedTaskForm from '../components/EnhancedTaskForm';
 import { useLoading } from '../hooks/useLoading';
 import toast from 'react-hot-toast';
+import tasksApi from '../lib/tasksApi';
+import type { Task, TaskStats } from '../types/task';
 
 type Priority = 'low' | 'medium' | 'high';
 type FilterType = 'all' | 'pending' | 'completed';
@@ -28,13 +30,16 @@ const subjects = [
 
 
 export default function Tasks() {
-  const { tasks, addTask, updateTask, deleteTask, toggleTask } = useStore();
+  const { isAuthenticated } = useStore();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [stats, setStats] = useState<TaskStats>({ total: 0, completed: 0, pending: 0, completionRate: 0 });
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { withLoading } = useLoading(false, 800);
 
   const sensors = useSensors(
@@ -44,13 +49,32 @@ export default function Tasks() {
     })
   );
 
-  // Simular loading inicial
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  // Carregar tarefas e estatísticas
+  const loadTasks = async () => {
+    try {
+      setIsLoading(true);
+      const [tasksResponse, statsResponse] = await Promise.all([
+        tasksApi.getTasks(),
+        tasksApi.getStats()
+      ]);
+      
+      setTasks(tasksResponse.data.tasks);
+      setStats(statsResponse.data);
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error);
+      toast.error('Erro ao carregar tarefas');
+    } finally {
+      setIsLoading(false);
       setIsInitialLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  };
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadTasks();
+    }
+  }, [isAuthenticated]);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -61,20 +85,23 @@ export default function Tasks() {
   });
 
   const handleSubmit = async (taskData: any) => {
-    await withLoading(async () => {
-      if (editingTask) {
-        updateTask(editingTask, taskData);
-        setEditingTask(null);
-        toast.success('Tarefa atualizada com sucesso! ✏️');
-      } else {
-        addTask({
-          ...taskData,
-          completed: false
-        });
-        toast.success('Tarefa criada com sucesso! ✅');
-      }
-      setShowAddForm(false);
-    });
+    try {
+      await withLoading(async () => {
+        if (editingTask) {
+          await tasksApi.updateTask(editingTask, taskData);
+          setEditingTask(null);
+          toast.success('Tarefa atualizada com sucesso! ✏️');
+        } else {
+          await tasksApi.createTask(taskData);
+          toast.success('Tarefa criada com sucesso! ✅');
+        }
+        setShowAddForm(false);
+        loadTasks(); // Recarregar tarefas e estatísticas
+      });
+    } catch (error) {
+      console.error('Erro ao salvar tarefa:', error);
+      toast.error('Erro ao salvar tarefa');
+    }
   };
 
   const handleDragEnd = (event: any) => {
@@ -95,18 +122,37 @@ export default function Tasks() {
     }
   };
 
-  const handleDelete = (taskId: string) => {
+  const handleDelete = async (taskId: string) => {
     if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
-      deleteTask(taskId);
-      toast.success('Tarefa excluída! 🗑️');
+      try {
+        await tasksApi.deleteTask(taskId);
+        setTasks(tasks.filter(t => t.id !== taskId));
+        toast.success('Tarefa excluída! 🗑️');
+        loadTasks(); // Recarregar estatísticas
+      } catch (error) {
+        console.error('Erro ao deletar tarefa:', error);
+        toast.error('Erro ao excluir tarefa');
+      }
     }
   };
 
-  const handleToggle = (taskId: string) => {
-    toggleTask(taskId);
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      toast.success(task.completed ? 'Tarefa marcada como pendente! ⏳' : 'Tarefa concluída! 🎉');
+  const handleToggle = async (taskId: string) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        const newCompleted = !task.completed;
+        await tasksApi.updateTask(taskId, { completed: newCompleted });
+        
+        setTasks(tasks.map(t => 
+          t.id === taskId ? { ...t, completed: newCompleted } : t
+        ));
+        
+        toast.success(newCompleted ? 'Tarefa concluída! 🎉' : 'Tarefa marcada como pendente! ⏳');
+        loadTasks(); // Recarregar estatísticas
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar tarefa:', error);
+      toast.error('Erro ao atualizar tarefa');
     }
   };
 
@@ -125,8 +171,6 @@ export default function Tasks() {
     return matchesFilter && matchesSearch && matchesSubject;
   });
 
-  const pendingTasks = tasks.filter(task => !task.completed);
-  const completedTasks = tasks.filter(task => task.completed);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -153,7 +197,7 @@ export default function Tasks() {
               <BookOpen className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-text-primary">{tasks.length}</p>
+              <p className="text-2xl font-bold text-text-primary">{stats.total}</p>
               <p className="text-sm text-text-secondary">Total de tarefas</p>
             </div>
           </div>
@@ -164,7 +208,7 @@ export default function Tasks() {
               <Flag className="w-6 h-6 text-yellow-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-text-primary">{pendingTasks.length}</p>
+              <p className="text-2xl font-bold text-text-primary">{stats.pending}</p>
               <p className="text-sm text-text-secondary">Pendentes</p>
             </div>
           </div>
@@ -175,7 +219,7 @@ export default function Tasks() {
               <Check className="w-6 h-6 text-secondary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-text-primary">{completedTasks.length}</p>
+              <p className="text-2xl font-bold text-text-primary">{stats.completed}</p>
               <p className="text-sm text-text-secondary">Concluídas</p>
             </div>
           </div>
