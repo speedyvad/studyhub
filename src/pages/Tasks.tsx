@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import DraggableTask from '../components/DraggableTask';
 import TaskContainer from '../components/TaskContainer';
 import TaskSkeleton from '../components/TaskSkeleton';
+import EnhancedTaskForm from '../components/EnhancedTaskForm';
 import { useLoading } from '../hooks/useLoading';
 import toast from 'react-hot-toast';
 
@@ -59,29 +60,19 @@ export default function Tasks() {
     priority: 'medium' as Priority
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title.trim()) return;
-
+  const handleSubmit = async (taskData: any) => {
     await withLoading(async () => {
       if (editingTask) {
-        updateTask(editingTask, formData);
+        updateTask(editingTask, taskData);
         setEditingTask(null);
         toast.success('Tarefa atualizada com sucesso! ✏️');
       } else {
         addTask({
-          ...formData,
+          ...taskData,
           completed: false
         });
         toast.success('Tarefa criada com sucesso! ✅');
       }
-
-      setFormData({
-        title: '',
-        description: '',
-        subject: 'Matemática',
-        priority: 'medium'
-      });
       setShowAddForm(false);
     });
   };
@@ -99,12 +90,6 @@ export default function Tasks() {
   const handleEdit = (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (task) {
-      setFormData({
-        title: task.title,
-        description: task.description || '',
-        subject: task.subject,
-        priority: task.priority
-      });
       setEditingTask(taskId);
       setShowAddForm(true);
     }
@@ -247,111 +232,17 @@ export default function Tasks() {
         </div>
       </div>
 
-      {/* Add/Edit Form */}
-      {showAddForm && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-text-primary">
-              {editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}
-            </h3>
-            <button
-              onClick={() => {
-                setShowAddForm(false);
-                setEditingTask(null);
-                setFormData({
-                  title: '',
-                  description: '',
-                  subject: 'Matemática',
-                  priority: 'medium'
-                });
-              }}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                Título *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="input-field"
-                placeholder="Ex: Resolver exercícios de Cálculo"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                Descrição
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="input-field"
-                rows={3}
-                placeholder="Detalhes adicionais sobre a tarefa..."
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Matéria
-                </label>
-                <select
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="input-field"
-                >
-                  {subjects.map(subject => (
-                    <option key={subject} value={subject}>{subject}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Prioridade
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as Priority })}
-                  className="input-field"
-                >
-                  <option value="low">Baixa</option>
-                  <option value="medium">Média</option>
-                  <option value="high">Alta</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAddForm(false);
-                  setEditingTask(null);
-                }}
-                className="px-6 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="btn-primary"
-              >
-                {editingTask ? 'Salvar' : 'Criar Tarefa'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      {/* Enhanced Task Form */}
+      <EnhancedTaskForm
+        isOpen={showAddForm}
+        onClose={() => {
+          setShowAddForm(false);
+          setEditingTask(null);
+        }}
+        onSubmit={handleSubmit}
+        initialData={editingTask ? tasks.find(t => t.id === editingTask) : undefined}
+        isEditing={!!editingTask}
+      />
 
       {/* Tasks List with Drag & Drop */}
       {isInitialLoading ? (

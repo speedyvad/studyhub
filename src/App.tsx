@@ -7,9 +7,10 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import Pomodoro from './pages/Pomodoro';
-import Community from './pages/Community';
+import Community from './pages/EnhancedCommunity';
 import Stats from './pages/Stats';
 import Profile from './pages/Profile';
+import AIQuestions from './pages/AIQuestions';
 import ToastProvider from './components/ToastProvider';
 
 // Create a client
@@ -109,6 +110,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <Profile />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ai-questions" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AIQuestions />
                   </Layout>
                 </ProtectedRoute>
               } 

@@ -10,7 +10,8 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
+  Brain
 } from 'lucide-react';
 import { useState } from 'react';
 import AchievementNotification from './AchievementNotification';
@@ -24,6 +25,7 @@ const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/tasks', icon: CheckSquare, label: 'Tarefas' },
   { path: '/pomodoro', icon: Timer, label: 'Pomodoro' },
+  { path: '/ai-questions', icon: Brain, label: 'IA Questões', premium: true },
   { path: '/community', icon: Users, label: 'Comunidade' },
   { path: '/stats', icon: BarChart3, label: 'Estatísticas' },
   { path: '/profile', icon: User, label: 'Perfil' },
@@ -93,14 +95,21 @@ export default function Layout({ children }: LayoutProps) {
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 ${
+                className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors duration-200 ${
                   isActive
                     ? 'bg-blue-500 text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
+                <div className="flex items-center space-x-3">
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </div>
+                {item.premium && (
+                  <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full font-medium">
+                    PRO
+                  </span>
+                )}
               </Link>
             );
           })}

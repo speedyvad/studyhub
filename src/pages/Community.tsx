@@ -12,6 +12,8 @@ import {
   Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import EnhancedCommentForm from '../components/EnhancedCommentForm';
+import PostComments from '../components/PostComments';
 import toast from 'react-hot-toast';
 
 export default function Community() {
@@ -21,12 +23,8 @@ export default function Community() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'trending' | 'recent'>('all');
 
-  const handleCreatePost = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPostContent.trim()) return;
-
-    addPost(newPostContent);
-    setNewPostContent('');
+  const handleCreatePost = (content: string) => {
+    addPost(content);
     setShowCreatePost(false);
     toast.success('Postagem criada com sucesso! 🎉');
   };
@@ -34,6 +32,21 @@ export default function Community() {
   const handleLikePost = (postId: string) => {
     likePost(postId);
     toast.success('Curtida adicionada! ❤️');
+  };
+
+  const handleAddComment = (postId: string, content: string) => {
+    // Implementar lógica de adicionar comentário
+    toast.success('Comentário adicionado! 💬');
+  };
+
+  const handleLikeComment = (commentId: string) => {
+    // Implementar lógica de curtir comentário
+    toast.success('Comentário curtido! ❤️');
+  };
+
+  const handleReplyToComment = (commentId: string, content: string) => {
+    // Implementar lógica de responder comentário
+    toast.success('Resposta adicionada! 💬');
   };
 
   const formatTimeAgo = (date: Date) => {
@@ -209,54 +222,21 @@ export default function Community() {
             </div>
           </div>
 
-          {/* Create Post Modal */}
+          {/* Enhanced Create Post Form */}
           {showCreatePost && (
-            <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-text-primary">Nova Postagem</h3>
-                <button
-                  onClick={() => {
-                    setShowCreatePost(false);
-                    setNewPostContent('');
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleCreatePost} className="space-y-4">
-                <div>
-                  <textarea
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    className="input-field"
-                    rows={4}
-                    placeholder="Compartilhe algo com a comunidade... Dicas de estudo, conquistas, dúvidas..."
-                    required
-                  />
-                </div>
-
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreatePost(false);
-                      setNewPostContent('');
-                    }}
-                    className="px-6 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                  >
-                    Publicar
-                  </button>
-                </div>
-              </form>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <EnhancedCommentForm
+                onSubmit={handleCreatePost}
+                placeholder="Compartilhe algo com a comunidade... Dicas de estudo, conquistas, dúvidas..."
+                showRichText={true}
+                maxLength={1000}
+              />
+            </motion.div>
           )}
 
           {/* Posts Feed */}
@@ -341,6 +321,15 @@ export default function Community() {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Comments Section */}
+                    <PostComments
+                      postId={post.id}
+                      comments={[]} // Mock comments - implementar no store
+                      onAddComment={handleAddComment}
+                      onLikeComment={handleLikeComment}
+                      onReplyToComment={handleReplyToComment}
+                    />
                   </motion.div>
                 ))
             ) : (
