@@ -202,10 +202,24 @@ export const useStore = create<StudyHubStore>((set, get) => ({
         };
         localStorage.setItem('token', response.data.token);
         set({ user: userData, isAuthenticated: true });
+      } else {
+        throw new Error(response.message || 'Erro no login');
       }
     } catch (error) {
       console.error('Erro no login:', error);
-      throw error;
+      
+      // Tratar diferentes tipos de erro
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('credenciais')) {
+          throw new Error('E-mail ou senha incorretos');
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          throw new Error('Erro de conexão. Verifique sua internet.');
+        } else {
+          throw new Error(error.message || 'Erro interno. Tente novamente.');
+        }
+      }
+      
+      throw new Error('Erro inesperado. Tente novamente.');
     }
   },
   logout: () => {
@@ -232,10 +246,26 @@ export const useStore = create<StudyHubStore>((set, get) => ({
         };
         localStorage.setItem('token', response.data.token);
         set({ user: userData, isAuthenticated: true });
+      } else {
+        throw new Error(response.message || 'Erro no registro');
       }
     } catch (error) {
       console.error('Erro no registro:', error);
-      throw error;
+      
+      // Tratar diferentes tipos de erro
+      if (error instanceof Error) {
+        if (error.message.includes('email') || error.message.includes('já existe')) {
+          throw new Error('Este e-mail já está em uso');
+        } else if (error.message.includes('senha') || error.message.includes('password')) {
+          throw new Error('Senha muito fraca. Use pelo menos 6 caracteres.');
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          throw new Error('Erro de conexão. Verifique sua internet.');
+        } else {
+          throw new Error(error.message || 'Erro interno. Tente novamente.');
+        }
+      }
+      
+      throw new Error('Erro inesperado. Tente novamente.');
     }
   },
 

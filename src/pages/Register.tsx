@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -11,15 +12,51 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   
   const { register } = useStore();
   const navigate = useNavigate();
 
+  // Validação de campos
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!name.trim()) {
+      newErrors.name = 'Nome é obrigatório';
+    } else if (name.trim().length < 2) {
+      newErrors.name = 'Nome deve ter pelo menos 2 caracteres';
+    }
+    
+    if (!email.trim()) {
+      newErrors.email = 'E-mail é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'E-mail inválido';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Senha é obrigatória';
+    } else if (password.length < 6) {
+      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+    }
+    
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Confirmação de senha é obrigatória';
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'As senhas não coincidem';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password !== confirmPassword) {
-      alert('As senhas não coincidem');
+    // Limpar erros anteriores
+    setErrors({});
+    
+    if (!validateForm()) {
+      toast.error('Por favor, corrija os erros no formulário');
       return;
     }
     
@@ -44,13 +81,27 @@ export default function Register() {
         
         // Atualizar o store
         register(name, email, password);
+        toast.success('Conta criada com sucesso! Bem-vindo ao StudyHub! 🎉');
         navigate('/dashboard');
       } else {
-        alert(data.message || 'Erro no registro');
+        // Tratar diferentes tipos de erro
+        if (data.message?.includes('email')) {
+          setErrors({ email: 'Este e-mail já está em uso' });
+        } else if (data.message?.includes('senha')) {
+          setErrors({ password: 'Senha muito fraca' });
+        } else {
+          toast.error(data.message || 'Erro no registro');
+        }
       }
     } catch (error) {
       console.error('Erro no registro:', error);
-      alert('Erro ao conectar com o servidor');
+      
+      // Tratar diferentes tipos de erro de conexão
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
+      } else {
+        toast.error('Erro interno. Tente novamente em alguns minutos.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,17 +129,28 @@ export default function Register() {
                 Nome completo
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.name ? 'text-red-500' : 'text-gray-400'}`} />
                 <input
                   id="name"
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input-field pl-10"
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (errors.name) {
+                      setErrors(prev => ({ ...prev, name: '' }));
+                    }
+                  }}
+                  className={`input-field pl-10 ${errors.name ? 'border-red-500 focus:border-red-500' : ''}`}
                   placeholder="Seu nome completo"
                   required
                 />
               </div>
+              {errors.name && (
+                <div className="flex items-center mt-1 text-red-600 text-sm">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.name}
+                </div>
+              )}
             </div>
 
             <div>
@@ -96,17 +158,28 @@ export default function Register() {
                 E-mail
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-gray-400'}`} />
                 <input
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field pl-10"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) {
+                      setErrors(prev => ({ ...prev, email: '' }));
+                    }
+                  }}
+                  className={`input-field pl-10 ${errors.email ? 'border-red-500 focus:border-red-500' : ''}`}
                   placeholder="seu@email.com"
                   required
                 />
               </div>
+              {errors.email && (
+                <div className="flex items-center mt-1 text-red-600 text-sm">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.email}
+                </div>
+              )}
             </div>
 
             <div>
@@ -114,13 +187,18 @@ export default function Register() {
                 Senha
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.password ? 'text-red-500' : 'text-gray-400'}`} />
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pl-10 pr-10"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) {
+                      setErrors(prev => ({ ...prev, password: '' }));
+                    }
+                  }}
+                  className={`input-field pl-10 pr-10 ${errors.password ? 'border-red-500 focus:border-red-500' : ''}`}
                   placeholder="Mínimo 6 caracteres"
                   required
                   minLength={6}
@@ -133,6 +211,12 @@ export default function Register() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {errors.password && (
+                <div className="flex items-center mt-1 text-red-600 text-sm">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.password}
+                </div>
+              )}
             </div>
 
             <div>
@@ -140,13 +224,18 @@ export default function Register() {
                 Confirmar senha
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-gray-400'}`} />
                 <input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input-field pl-10 pr-10"
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (errors.confirmPassword) {
+                      setErrors(prev => ({ ...prev, confirmPassword: '' }));
+                    }
+                  }}
+                  className={`input-field pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500 focus:border-red-500' : ''}`}
                   placeholder="Confirme sua senha"
                   required
                 />
@@ -158,6 +247,12 @@ export default function Register() {
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {errors.confirmPassword && (
+                <div className="flex items-center mt-1 text-red-600 text-sm">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.confirmPassword}
+                </div>
+              )}
             </div>
 
             <button

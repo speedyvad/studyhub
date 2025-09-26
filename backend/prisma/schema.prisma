@@ -32,6 +32,12 @@ model User {
   posts             Post[]
   postLikes         PostLike[]
   comments          Comment[]
+  groupMemberships  GroupMembership[]
+  chatMessages      ChatMessage[]
+  groupInvitations  GroupInvitation[]
+  ownedGroups       Group[] @relation("GroupOwner")
+  sentInvitations   GroupInvitation[] @relation("GroupInviter")
+  messageReactions  MessageReaction[]
   
   @@map("users")
 }
@@ -153,10 +159,115 @@ model Comment {
   @@map("comments")
 }
 
+// Modelos para Chat e Grupos
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String
+  isPrivate   Boolean  @default(false)
+  tags        String[] // Array de tags
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  owner       User             @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  memberships GroupMembership[]
+  messages    ChatMessage[]
+  invitations GroupInvitation[]
+  
+  @@map("groups")
+}
+
+model GroupMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String
+  role      GroupRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+  
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, groupId])
+  @@map("group_memberships")
+}
+
+model ChatMessage {
+  id          String      @id @default(cuid())
+  userId      String
+  groupId     String
+  content     String
+  messageType MessageType @default(TEXT)
+  replyToId   String?     // ID da mensagem que está respondendo
+  isEdited    Boolean      @default(false)
+  editedAt    DateTime?
+  createdAt   DateTime    @default(now())
+  
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  replyTo ChatMessage? @relation("MessageReply", fields: [replyToId], references: [id])
+  replies ChatMessage[] @relation("MessageReply")
+  reactions MessageReaction[]
+  
+  @@map("chat_messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId, emoji])
+  @@map("message_reactions")
+}
+
+model GroupInvitation {
+  id        String   @id @default(cuid())
+  groupId   String
+  userId    String   // Usuário que foi convidado
+  invitedBy String   // Usuário que enviou o convite
+  status    InvitationStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  respondedAt DateTime?
+  
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviter User  @relation("GroupInviter", fields: [invitedBy], references: [id], onDelete: Cascade)
+  
+  @@unique([groupId, userId])
+  @@map("group_invitations")
+}
+
 enum Priority {
   LOW
   MEDIUM
   HIGH
+}
+
+enum GroupRole {
+  MEMBER
+  ADMIN
+  MODERATOR
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
 }
 
 

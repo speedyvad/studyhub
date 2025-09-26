@@ -16,6 +16,7 @@ import {
 import { useState, useEffect } from 'react';
 import AchievementNotification from './AchievementNotification';
 import ThemeToggle from './ThemeToggle';
+import NotificationBell from './NotificationBell';
 
 interface LayoutProps {
   children: ReactNode;
@@ -147,6 +148,13 @@ export default function Layout({ children }: LayoutProps) {
           })}
         </nav>
 
+        {/* Notifications */}
+        {!sidebarCollapsed && (
+          <div className="px-4 py-3">
+            <NotificationBell />
+          </div>
+        )}
+
         {/* Theme toggle and Logout */}
         <div className={`border-t border-gray-200 dark:border-gray-700 space-y-3 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
           {!sidebarCollapsed && (
@@ -191,7 +199,9 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             <span className="font-bold text-gray-900 dark:text-gray-100">StudyHub</span>
           </div>
-          <div className="w-6" /> {/* Spacer */}
+          <div className="flex items-center space-x-2">
+            <NotificationBell />
+          </div>
         </div>
 
         {/* Page content */}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, CheckCircle, Clock, Target } from 'lucide-react';
+import { Play, Pause, RotateCcw, CheckCircle, Clock, Target, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type TimerState = 'idle' | 'running' | 'paused' | 'completed';
@@ -80,6 +80,15 @@ export default function Pomodoro() {
     setTimeLeft(selectedDuration * 60);
     resetPomodoro();
     toast('Pomodoro resetado. Pronto para começar! 🔄');
+  };
+
+  const handleExit = () => {
+    if (timerState === 'running' || timerState === 'paused') {
+      if (confirm('Tem certeza que deseja sair? O progresso atual será perdido.')) {
+        handleReset();
+        toast('Sessão cancelada. Você pode começar uma nova quando quiser! 🚪');
+      }
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -216,6 +225,27 @@ export default function Pomodoro() {
                 </AnimatePresence>
               </div>
             </motion.div>
+
+            {/* Botão de Sair - Sempre visível quando timer está ativo */}
+            {(timerState === 'running' || timerState === 'paused') && (
+              <motion.div 
+                className="flex justify-center mb-4"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.button
+                  onClick={handleExit}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors duration-200 shadow-lg"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                >
+                  <X className="w-4 h-4" />
+                  <span>Sair</span>
+                </motion.button>
+              </motion.div>
+            )}
 
             {/* Controles */}
             <motion.div 
