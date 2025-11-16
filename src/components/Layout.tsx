@@ -10,12 +10,10 @@ import {
   User,
   LogOut,
   Menu,
-  X,
-  Brain
+  X
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import AchievementNotification from './AchievementNotification';
-import ThemeToggle from './ThemeToggle';
 import NotificationBell from './NotificationBell';
 
 interface LayoutProps {
@@ -26,7 +24,6 @@ const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/tasks', icon: CheckSquare, label: 'Tarefas' },
   { path: '/pomodoro', icon: Timer, label: 'Sessão de Foco' },
-  { path: '/ai-questions', icon: Brain, label: 'IA Questões', premium: true },
   { path: '/community', icon: Users, label: 'Comunidade' },
   { path: '/stats', icon: BarChart3, label: 'Estatísticas' },
   { path: '/profile', icon: User, label: 'Perfil' },
@@ -155,19 +152,8 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         )}
 
-        {/* Theme toggle and Logout */}
+        {/* Logout */}
         <div className={`border-t border-gray-200 dark:border-gray-700 space-y-3 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
-          {!sidebarCollapsed && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Tema</span>
-              <ThemeToggle />
-            </div>
-          )}
-          {sidebarCollapsed && (
-            <div className="flex justify-center">
-              <ThemeToggle />
-            </div>
-          )}
           <button
             onClick={handleLogout}
             className={`flex items-center w-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 rounded-lg transition-colors duration-200 ${

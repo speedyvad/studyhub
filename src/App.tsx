@@ -10,7 +10,7 @@ import FocusSession from './pages/FocusSession';
 import Community from './pages/Community';
 import Stats from './pages/Stats';
 import Profile from './pages/Profile';
-import AIQuestions from './pages/AIQuestions';
+
 import Admin from './pages/Admin';
 import ToastProvider from './components/ToastProvider';
 
@@ -86,16 +86,6 @@ function App() {
               } 
             />
             <Route 
-              path="/community" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Community />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
               path="/stats" 
               element={
                 <ProtectedRoute>
@@ -116,11 +106,11 @@ function App() {
               } 
             />
             <Route 
-              path="/ai-questions" 
+              path="/community" 
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <AIQuestions />
+                    <Community />
                   </Layout>
                 </ProtectedRoute>
               } 

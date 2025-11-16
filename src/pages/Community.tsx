@@ -22,6 +22,11 @@ export default function Community() {
   });
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedGroupForChat, setSelectedGroupForChat] = useState<Group | null>(null);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [newPost, setNewPost] = useState({
+    content: '',
+    tags: [] as string[]
+  });
 
   useEffect(() => {
     const loadCommunityData = async () => {
@@ -139,6 +144,41 @@ export default function Community() {
     }
   };
 
+  const handleCreatePost = async () => {
+    if (!newPost.content.trim()) {
+      toast.error('Escreva algo para compartilhar!');
+      return;
+    }
+
+    try {
+      // Adicionar o novo post à lista (implementar API depois)
+      const createdPost: Post = {
+        id: Date.now().toString(),
+        content: newPost.content,
+        author: {
+          id: '1',
+          name: 'Você',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          verified: false
+        },
+        tags: selectedTags,
+        timestamp: new Date().toISOString(),
+        likes: 0,
+        comments: [],
+        isLiked: false
+      };
+
+      setPosts([createdPost, ...posts]);
+      setNewPost({ content: '', tags: [] });
+      setSelectedTags([]);
+      setShowCreatePost(false);
+      toast.success('Post compartilhado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao criar post:', error);
+      toast.error('Erro ao compartilhar o post');
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
@@ -214,6 +254,75 @@ export default function Community() {
       {/* Content */}
       {activeTab === 'feed' ? (
         <div className="space-y-4">
+          {/* Create Post Form */}
+          <motion.div
+            className="card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <img
+                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                  alt="Seu avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div className="flex-1">
+                  <textarea
+                    placeholder="O que você gostaria de compartilhar com a comunidade?"
+                    value={newPost.content}
+                    onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Tags */}
+              {newPost.content.trim() && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-text-secondary">Adicionar tags (opcional)</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {popularTags.map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => toggleTag(tag)}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                          selectedTags.includes(tag)
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        #{tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              {newPost.content.trim() && (
+                <div className="flex justify-end space-x-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setNewPost({ content: '', tags: [] });
+                      setSelectedTags([]);
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleCreatePost}
+                    className="btn-primary px-4 py-2"
+                  >
+                    Compartilhar
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
           {filteredPosts.length === 0 ? (
             <motion.div
               className="card text-center py-12"

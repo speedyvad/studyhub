@@ -3,28 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, 
   X, 
-  Check, 
-  CheckCheck, 
   MessageCircle, 
-  Users, 
   Calendar, 
   Star,
-  AlertCircle,
-  Clock,
-  Trophy
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 interface Notification {
   id: string;
-  type: 'message' | 'task' | 'achievement' | 'reminder' | 'group' | 'system';
+  type: 'message' | 'task' | 'achievement';
   title: string;
   message: string;
   timestamp: Date;
   isRead: boolean;
-  isImportant: boolean;
-  actionUrl?: string;
-  icon?: string;
 }
 
 export default function NotificationBell() {
@@ -32,63 +22,15 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Mock data para demonstração
+  // Usar localStorage ou API para carregar notificações reais
   useEffect(() => {
-    const mockNotifications: Notification[] = [
-      {
-        id: '1',
-        type: 'message',
-        title: 'Nova mensagem no grupo',
-        message: 'João enviou uma mensagem no grupo "Matemática Avançada"',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000),
-        isRead: false,
-        isImportant: false,
-        actionUrl: '/community'
-      },
-      {
-        id: '2',
-        type: 'task',
-        title: 'Tarefa próxima do vencimento',
-        message: 'Resolver exercícios de Cálculo - vence em 2 horas',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000),
-        isRead: false,
-        isImportant: true,
-        actionUrl: '/tasks'
-      },
-      {
-        id: '3',
-        type: 'achievement',
-        title: 'Nova conquista desbloqueada!',
-        message: 'Você ganhou a conquista "Maratonista" por estudar 4 horas seguidas',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        isRead: true,
-        isImportant: false,
-        actionUrl: '/profile'
-      },
-      {
-        id: '4',
-        type: 'reminder',
-        title: 'Lembrete de estudo',
-        message: 'Hora da sua sessão de estudo de Física!',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-        isRead: true,
-        isImportant: false,
-        actionUrl: '/pomodoro'
-      },
-      {
-        id: '5',
-        type: 'group',
-        title: 'Convite para grupo',
-        message: 'Você foi convidado para o grupo "Programação Web"',
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
-        isRead: false,
-        isImportant: false,
-        actionUrl: '/community'
-      }
-    ];
-    
-    setNotifications(mockNotifications);
-    setUnreadCount(mockNotifications.filter(n => !n.isRead).length);
+    // Por enquanto, usar array vazio (notificações virão da API/store)
+    const savedNotifications = localStorage.getItem('notifications');
+    if (savedNotifications) {
+      const parsed = JSON.parse(savedNotifications);
+      setNotifications(parsed);
+      setUnreadCount(parsed.filter((n: Notification) => !n.isRead).length);
+    }
   }, []);
 
   const getNotificationIcon = (type: string) => {
@@ -98,13 +40,7 @@ export default function NotificationBell() {
       case 'task':
         return <Calendar className="w-5 h-5 text-orange-500" />;
       case 'achievement':
-        return <Trophy className="w-5 h-5 text-yellow-500" />;
-      case 'reminder':
-        return <Clock className="w-5 h-5 text-purple-500" />;
-      case 'group':
-        return <Users className="w-5 h-5 text-green-500" />;
-      case 'system':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
+        return <Star className="w-5 h-5 text-yellow-500" />;
       default:
         return <Bell className="w-5 h-5 text-gray-500" />;
     }
@@ -131,14 +67,6 @@ export default function NotificationBell() {
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, isRead: true }))
-    );
-    setUnreadCount(0);
-    toast.success('Todas as notificações foram marcadas como lidas');
-  };
-
   const deleteNotification = (notificationId: string) => {
     setNotifications(prev => {
       const notification = prev.find(n => n.id === notificationId);
@@ -147,19 +75,6 @@ export default function NotificationBell() {
       }
       return prev.filter(n => n.id !== notificationId);
     });
-  };
-
-  const handleNotificationClick = (notification: Notification) => {
-    if (!notification.isRead) {
-      markAsRead(notification.id);
-    }
-    
-    if (notification.actionUrl) {
-      // Navegar para a URL (implementar roteamento)
-      console.log('Navigate to:', notification.actionUrl);
-    }
-    
-    setIsOpen(false);
   };
 
   return (
@@ -199,22 +114,12 @@ export default function NotificationBell() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h3 className="font-semibold text-text-primary">Notificações</h3>
-              <div className="flex items-center space-x-2">
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllAsRead}
-                    className="text-sm text-primary hover:text-primary-600 transition-colors"
-                  >
-                    Marcar todas como lidas
-                  </button>
-                )}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 hover:bg-gray-100 rounded transition-colors"
-                >
-                  <X className="w-4 h-4 text-gray-500" />
-                </button>
-              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
             </div>
 
             {/* Notifications List */}
@@ -232,7 +137,6 @@ export default function NotificationBell() {
                       className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                         !notification.isRead ? 'bg-blue-50' : ''
                       }`}
-                      onClick={() => handleNotificationClick(notification)}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
@@ -249,67 +153,32 @@ export default function NotificationBell() {
                             }`}>
                               {notification.title}
                             </h4>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs text-text-secondary">
-                                {formatTimeAgo(notification.timestamp)}
-                              </span>
-                              {!notification.isRead && (
-                                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                              )}
-                            </div>
+                            <span className="text-xs text-text-secondary">
+                              {formatTimeAgo(notification.timestamp)}
+                            </span>
                           </div>
                           
                           <p className="text-sm text-text-secondary mt-1 line-clamp-2">
                             {notification.message}
                           </p>
-                          
-                          {notification.isImportant && (
-                            <div className="flex items-center mt-2 text-xs text-orange-600">
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              Importante
-                            </div>
-                          )}
                         </div>
                         
-                        <div className="flex items-center space-x-1">
-                          {!notification.isRead && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                markAsRead(notification.id);
-                              }}
-                              className="p-1 hover:bg-gray-200 rounded transition-colors"
-                              title="Marcar como lida"
-                            >
-                              <Check className="w-4 h-4 text-gray-500" />
-                            </button>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteNotification(notification.id);
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded transition-colors"
-                            title="Excluir"
-                          >
-                            <X className="w-4 h-4 text-gray-500" />
-                          </button>
-                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          title="Excluir"
+                        >
+                          <X className="w-4 h-4 text-gray-500" />
+                        </button>
                       </div>
                     </motion.div>
                   ))}
                 </div>
               )}
             </div>
-
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="p-4 border-t border-gray-200 bg-gray-50">
-                <button className="w-full text-sm text-primary hover:text-primary-600 transition-colors">
-                  Ver todas as notificações
-                </button>
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
