@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, CheckCircle, Clock, Target, X } from 'lucide-react';
@@ -9,6 +10,7 @@ type TimerState = 'idle' | 'running' | 'paused' | 'completed';
 export default function Pomodoro() {
   const { currentSession, completedSessions, startPomodoro, pausePomodoro, resetPomodoro, completePomodoro } = useStore();
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutos em segundos
+  const navigate = useNavigate();
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [selectedDuration, setSelectedDuration] = useState(25);
   const intervalRef = useRef<number | null>(null);
@@ -87,6 +89,11 @@ export default function Pomodoro() {
       if (confirm('Tem certeza que deseja sair? O progresso atual será perdido.')) {
         handleReset();
         toast('Sessão cancelada. Você pode começar uma nova quando quiser! 🚪');
+        try {
+          navigate(-1);
+        } catch {
+          navigate('/');
+        }
       }
     }
   };
@@ -123,10 +130,21 @@ export default function Pomodoro() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-text-primary mb-2">Pomodoro Timer</h1>
-        <p className="text-text-secondary">Mantenha o foco com ciclos de estudo eficientes</p>
+      {/* Header with back button */}
+      <div className="flex items-center justify-between space-x-4">
+        <div>
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 shadow-sm"
+          >
+            ← Voltar
+          </button>
+        </div>
+        <div className="text-center flex-1">
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Pomodoro Timer</h1>
+          <p className="text-text-secondary">Mantenha o foco com ciclos de estudo eficientes</p>
+        </div>
+        <div className="w-12" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

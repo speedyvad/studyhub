@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
@@ -49,6 +50,7 @@ const subjects = [
 
 export default function FocusSession() {
   const { user } = useStore();
+  const navigate = useNavigate();
   const [config, setConfig] = useState<PomodoroConfig>({
     totalTime: 60, // 1 hora por padrão
     focusTime: 25,
@@ -379,7 +381,7 @@ export default function FocusSession() {
 
           <div className="flex space-x-3">
             <button
-              onClick={() => setShowOverlay(false)}
+              onClick={() => navigate(-1)}
               className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
             >
               Voltar
@@ -405,7 +407,12 @@ export default function FocusSession() {
         <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={resetSession}
+              onClick={() => {
+                if (confirm('Deseja realmente sair da sessão? O progresso será perdido.')) {
+                  resetSession();
+                  navigate(-1);
+                }
+              }}
               className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
             >
               <X className="w-5 h-5" />
