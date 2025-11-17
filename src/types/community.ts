@@ -2,7 +2,7 @@
 export interface Post {
   id: string;
   content: string;
-  author: {
+  user: {
     id: string;
     name: string;
     avatar?: string;
@@ -39,7 +39,7 @@ export interface Group {
 export interface Comment {
   id: string;
   content: string;
-  author: {
+  user: {
     id: string;
     name: string;
     avatar?: string;

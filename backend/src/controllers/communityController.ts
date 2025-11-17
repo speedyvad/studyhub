@@ -32,13 +32,14 @@ export const getPosts = async (req: Request, res: Response) => {
             id: true,
             name: true,
             avatarUrl: true,
-            level: true
+            level: true,
+            verified: true
           }
         },
         _count: {
           select: {
             likes: true,
-            comments: true
+            comments: true,
           }
         }
       },
@@ -51,7 +52,7 @@ export const getPosts = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: { 
+      data: {
         posts,
         pagination: {
           page: parseInt(page as string),
@@ -63,9 +64,9 @@ export const getPosts = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao buscar posts:', error)
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Erro ao buscar posts' 
+      message: 'Erro ao buscar posts'
     })
   }
 }
@@ -108,9 +109,9 @@ export const getPostById = async (req: Request, res: Response) => {
     })
 
     if (!post) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Post não encontrado' 
+        message: 'Post não encontrado'
       })
     }
 
@@ -120,9 +121,9 @@ export const getPostById = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao buscar post:', error)
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: 'Erro ao buscar post' 
+      message: 'Erro ao buscar post'
     })
   }
 }
@@ -163,17 +164,17 @@ export const createPost = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao criar post:', error)
-    
+
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: error.errors[0].message 
+        message: error.errors[0].message
       })
     }
-    
-    return res.status(500).json({ 
+
+    return res.status(500).json({
       success: false,
-      message: 'Erro ao criar post' 
+      message: 'Erro ao criar post'
     })
   }
 }
@@ -189,9 +190,9 @@ export const likePost = async (req: Request, res: Response) => {
     })
 
     if (!post) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Post não encontrado' 
+        message: 'Post não encontrado'
       })
     }
 
@@ -268,9 +269,9 @@ export const likePost = async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.error('Erro ao curtir post:', error)
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: 'Erro ao curtir post' 
+      message: 'Erro ao curtir post'
     })
   }
 }
@@ -287,9 +288,9 @@ export const createComment = async (req: Request, res: Response) => {
     })
 
     if (!post) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Post não encontrado' 
+        message: 'Post não encontrado'
       })
     }
 
@@ -334,17 +335,17 @@ export const createComment = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao criar comentário:', error)
-    
+
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: error.errors[0].message 
+        message: error.errors[0].message
       })
     }
-    
-    return res.status(500).json({ 
+
+    return res.status(500).json({
       success: false,
-      message: 'Erro ao criar comentário' 
+      message: 'Erro ao criar comentário'
     })
   }
 }
@@ -356,22 +357,27 @@ export const deletePost = async (req: Request, res: Response) => {
 
     // Verificar se o post existe e pertence ao usuário
     const post = await prisma.post.findFirst({
-      where: { 
+      where: {
         id,
-        userId 
+        userId
       }
     })
 
     if (!post) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Post não encontrado ou você não tem permissão para deletá-lo' 
+        message: 'Post não encontrado ou você não tem permissão para deletá-lo'
       })
     }
 
     await prisma.post.delete({
       where: { id }
     })
+    try {
+      chatSocketManager.broadcast('post:deleted', { postId: id })
+    } catch (e) {
+      console.error("Socket broadcast failed for post:deleted", e)
+    }
 
     return res.json({
       success: true,
@@ -379,9 +385,9 @@ export const deletePost = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao deletar post:', error)
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: 'Erro ao deletar post' 
+      message: 'Erro ao deletar post'
     })
   }
 }

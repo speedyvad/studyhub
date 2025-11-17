@@ -13,6 +13,7 @@ import Profile from './pages/Profile';
 
 import Admin from './pages/Admin';
 import ToastProvider from './components/ToastProvider';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -110,7 +111,9 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Community />
+                    <ErrorBoundary> {/* <--- Linha Adicionada */}
+                      <Community />
+                    </ErrorBoundary> {/* <--- Linha Adicionada */}
                   </Layout>
                 </ProtectedRoute>
               } 

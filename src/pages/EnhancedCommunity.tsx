@@ -80,25 +80,56 @@ export default function EnhancedCommunity() {
 
   // Estado para os posts reais
   const [posts, setPosts] = useState<Post[]>([]);
+  // Estado para os grupos reais
+  const [groups, setGroups] = useState<Group[]>([]);
 
   // Carregar posts da API ao montar
   useEffect(() => {
     async function fetchPosts() {
-      // Estado para os grupos reais
-      const [groups, setGroups] = useState<Group[]>([]);
+      try {
+        const response = await communityApi.getPosts();
+        const postsWithDate = response.data.posts.map((post: any) => ({
+          ...post,
+          timestamp: new Date(post.timestamp),
+        }));
+        setPosts(postsWithDate);
+      } catch (error) {
+        console.error('Erro ao carregar posts:', error);
+      }
+    }
+    fetchPosts();
+  }, []);
 
-      // Carregar grupos da API ao montar
-      useEffect(() => {
-        async function fetchGroups() {
-          try {
-            const response = await communityApi.getGroups();
-            setGroups(response.data.groups);
-          } catch (error) {
-            console.error('Erro ao carregar grupos:', error);
-          }
-        }
-        fetchGroups();
-      }, []);
+  // Função para recarregar grupos
+  const reloadGroups = async () => {
+    try {
+      const response = await communityApi.getGroups();
+      const groupsWithDate = response.data.groups.map((group: any) => ({
+        ...group,
+        createdAt: new Date(group.createdAt),
+      }));
+      setGroups(groupsWithDate);
+    } catch (error) {
+      console.error('Erro ao recarregar grupos:', error);
+    }
+  };
+
+  // Carregar grupos da API ao montar
+  useEffect(() => {
+    async function fetchGroups() {
+      try {
+        const response = await communityApi.getGroups();
+        const groupsWithDate = response.data.groups.map((group: any) => ({
+          ...group,
+          createdAt: new Date(group.createdAt),
+        }));
+        setGroups(groupsWithDate);
+      } catch (error) {
+        console.error('Erro ao carregar grupos:', error);
+      }
+    }
+    fetchGroups();
+  }, []);
   // useWebSocket({
   //   url: FEED_WS_URL,
   //   onMessage: (message) => {
@@ -114,8 +145,17 @@ export default function EnhancedCommunity() {
   };
 
   const handleCreateGroup = (data: any) => {
-    console.log('Creating group:', data);
-    setShowCreateGroup(false);
+    // Cria grupo via API e atualiza lista
+    async function createAndReload() {
+      try {
+        await communityApi.createGroup(data);
+        setShowCreateGroup(false);
+        reloadGroups();
+      } catch (error) {
+        console.error('Erro ao criar grupo:', error);
+      }
+    }
+    createAndReload();
   };
 
   const handleSearch = (filters: any) => {

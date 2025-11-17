@@ -32,15 +32,7 @@ app.use(cors({
 }))
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutos
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // 100 requests por IP
-  message: {
-    success: false,
-    message: 'Muitas requisições, tente novamente em alguns minutos'
-  }
-})
-app.use(limiter)
+// app.use(limiter)
 
 // Logging
 if (process.env.NODE_ENV === 'development') {

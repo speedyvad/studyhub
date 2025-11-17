@@ -258,4 +258,48 @@ export const completeTask = async (req: Request, res: Response) => {
   }
 }
 
+// 👇 --- NOVA FUNÇÃO ADICIONADA --- 👇
+export const getTaskStats = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
 
+    // Usar Promise.all para rodar as contagens em paralelo
+    const [total, completed, pending] = await Promise.all([
+      prisma.task.count({ where: { userId } }),
+      prisma.task.count({ where: { userId, completed: true } }),
+      prisma.task.count({ where: { userId, completed: false } })
+    ]);
+
+    // Opcional: Agrupar tarefas pendentes por prioridade
+    const byPriority = await prisma.task.groupBy({
+      by: ['priority'],
+      where: { userId, completed: false },
+      _count: {
+        id: true
+      }
+    });
+
+    const stats = {
+      total,
+      completed,
+      pending,
+      // Mapear para um formato mais amigável
+      byPriority: byPriority.map(p => ({
+        priority: p.priority,
+        count: p._count.id
+      }))
+    };
+
+    return res.json({
+      success: true,
+      data: { stats }
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas de tarefas:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Erro ao buscar estatísticas' 
+    });
+  }
+};
