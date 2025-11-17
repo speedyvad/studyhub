@@ -249,11 +249,21 @@ export default function FocusSession() {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <motion.div
-          className="bg-white rounded-2xl p-8 max-w-md w-full mx-4"
+          className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
         >
+          {/* --- BOTÃO DE FECHAR ADICIONADO --- */}
+          <button
+            onClick={() => navigate(-1)} // -1 = Voltar
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Fechar"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          {/* --- FIM DA ADIÇÃO --- */}
+
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Target className="w-8 h-8 text-blue-600" />
