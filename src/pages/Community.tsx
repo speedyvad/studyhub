@@ -6,8 +6,10 @@ import socketLib from '../lib/socket';
 import type { Post, Group } from '../types/community';
 import toast from 'react-hot-toast';
 import GroupChat from '../components/GroupChat';
+import { useStore } from '../store/useStore';
 
 export default function Community() {
+  const { user } = useStore();
   const [posts, setPosts] = useState<Post[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +63,9 @@ export default function Community() {
     const onPostCreated = (payload: any) => {
       const newPost = payload?.post ?? payload;
       if (!newPost || !newPost.id) return;
+      if (newPost.user?.id === user?.id) {
+        return;
+      }
       setPosts(prev => {
         // evitar duplicatas
         if (prev.some(p => p.id === newPost.id)) return prev;
@@ -74,20 +79,28 @@ export default function Community() {
       if (!postId) return;
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: typeof likes === 'number' ? likes : p.likes, liked: typeof liked === 'boolean' ? liked : p.liked } : p));
     };
+    const onPostDeleted = (payload: any) => {
+      const { postId } = payload ?? {};
+      if (!postId) return;
+      
+      // Remove o post do estado local
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+    };
 
-    const onCommentCreated = (payload: any) => {
+    const onCommentCreated = (payload: { postId: string }) => {
       const { postId } = payload ?? {};
       if (!postId) return;
       setPosts(prev => prev.map(p => {
         if (p.id !== postId) return p;
         const cur = typeof p.comments === 'number' ? p.comments : 0;
-        return { ...p, comments: cur + 1 } as any;
+        return { ...p, comments: cur + 1 };
       }));
     };
 
     socket.on('post:created', onPostCreated);
     socket.on('post:liked', onPostLiked);
     socket.on('comment:created', onCommentCreated);
+    socket.on('post:deleted', onPostDeleted);
 
     return () => {
       mounted = false;
@@ -95,19 +108,20 @@ export default function Community() {
         socket.off('post:created', onPostCreated);
         socket.off('post:liked', onPostLiked);
         socket.off('comment:created', onCommentCreated);
+        socket.off('post:deleted', onPostDeleted);
       } catch (e) {
         // ignore
       }
       // não desconectamos o socket globalmente para não perturbar outros componentes; se quiser, chamar socketLib.disconnectSocket()
     };
-  }, []);
+  }, [user]);
 
-  const filteredPosts = posts.filter(post => 
+  const filteredPosts = posts.filter(post =>
     post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const filteredGroups = groups.filter(group => 
+  const filteredGroups = groups.filter(group =>
     group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     group.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     group.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -144,41 +158,38 @@ export default function Community() {
         tags: selectedTags
       };
 
-      // Simular criação do grupo (substituir por API real)
-      const newGroupData: Group = {
-        id: Date.now().toString(),
-        name: groupData.name,
-        description: groupData.description,
-        category: groupData.category,
-        memberCount: 1,
-        postCount: 0,
-        isPrivate: groupData.isPrivate,
-        isJoined: true,
-        isOwner: true,
-        tags: groupData.tags,
-        trendingScore: 0,
-        rules: [],
-        createdAt: new Date().toISOString()
-      };
+      // --- INÍCIO DA CORREÇÃO ---
 
-      setGroups(prev => [newGroupData, ...prev]);
+      // 1. Chame a API REAL (que você corrigiu antes)
+      const response = await communityApi.createGroup(groupData);
+
+      // 2. Pegue o grupo REAL que o backend retornou (com o ID do Prisma)
+      const createdGroupFromAPI = response.data.group;
+
+      // 3. Adicione o grupo REAL ao seu estado
+      setGroups(prev => [createdGroupFromAPI, ...prev]);
+
+      // --- FIM DA CORREÇÃO ---
+
       setShowCreateGroup(false);
       setNewGroup({ name: '', description: '', category: '', isPrivate: false, tags: [] });
       setSelectedTags([]);
       toast.success('Grupo criado com sucesso! 🎉');
+
     } catch (error) {
       console.error('Erro ao criar grupo:', error);
-      toast.error('Erro ao criar grupo. Tente novamente.');
+      // Isso vai mostrar o erro do Zod (Ex: "Categoria é obrigatória")
+      toast.error(`Erro ao criar grupo: ${(error instanceof Error && error.message) || 'Tente novamente.'}`);
     }
   };
 
   const handleJoinGroup = (groupId: string) => {
-    setGroups(prev => prev.map(group => 
-      group.id === groupId 
+    setGroups(prev => prev.map(group =>
+      group.id === groupId
         ? { ...group, isJoined: !group.isJoined, memberCount: group.isJoined ? group.memberCount - 1 : group.memberCount + 1 }
         : group
     ));
-    
+
     const group = groups.find(g => g.id === groupId);
     if (group) {
       toast.success(group.isJoined ? 'Você saiu do grupo' : 'Você entrou no grupo! 🎉');
@@ -206,10 +217,10 @@ export default function Community() {
     const optimisticPost: Post = {
       id: tempId,
       content: newPost.content,
-      author: {
-        id: '1',
-        name: 'Você',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      user: {
+        id: user?.id || 'temp-user',
+        name: user?.name || 'Você',
+        avatar: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
         verified: false
       },
       tags: selectedTags,
@@ -287,25 +298,23 @@ export default function Community() {
               className="input-field pl-10 w-full"
             />
           </div>
-          
+
           <div className="flex space-x-2">
             <button
               onClick={() => setActiveTab('feed')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                activeTab === 'feed' 
-                  ? 'bg-primary text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'feed'
+                ? 'bg-primary text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
               Feed
             </button>
             <button
               onClick={() => setActiveTab('groups')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                activeTab === 'groups' 
-                  ? 'bg-primary text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'groups'
+                ? 'bg-primary text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
               Grupos
             </button>
@@ -350,11 +359,10 @@ export default function Community() {
                       <button
                         key={tag}
                         onClick={() => toggleTag(tag)}
-                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                          selectedTags.includes(tag)
-                            ? 'bg-primary text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${selectedTags.includes(tag)
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
                       >
                         #{tag}
                       </button>
@@ -418,15 +426,19 @@ export default function Community() {
                 <div className="flex space-x-3">
                   <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                     <span className="text-primary font-semibold">
-                      {post.author.name.charAt(0)}
+                      {/* CORRIGIDO: Adicionado '?.' e fallback '?' */}
+                      {post.user?.name?.charAt(0) || '?'} {/* <--- Correto */}
                     </span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="font-semibold text-text-primary">{post.author.name}</h4>
-                      {post.author.verified && (
+                      {/* CORRIGIDO: Adicionado '?.' e fallback 'Usuário Anônimo' */}
+                      <h4 className="font-semibold text-text-primary">{post.user?.name || 'Usuário Anônimo'}</h4> {/* <--- Correto */}
+
+                      {/* CORRIGIDO: Adicionado '?.' */}
+                      {post.user?.verified &&
                         <Star className="w-4 h-4 text-blue-500" />
-                      )}
+                      }
                       <span className="text-sm text-text-secondary">
                         {new Date(post.timestamp).toLocaleDateString()}
                       </span>
@@ -537,11 +549,10 @@ export default function Community() {
                             <button
                               key={category.id}
                               onClick={() => setNewGroup(prev => ({ ...prev, category: category.id }))}
-                              className={`p-3 rounded-lg border-2 transition-all ${
-                                newGroup.category === category.id
-                                  ? 'border-primary bg-primary-50'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
+                              className={`p-3 rounded-lg border-2 transition-all ${newGroup.category === category.id
+                                ? 'border-primary bg-primary-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                                }`}
                             >
                               <div className={`w-8 h-8 ${category.color} rounded-lg flex items-center justify-center mx-auto mb-2`}>
                                 <IconComponent className="w-4 h-4 text-white" />
@@ -563,11 +574,10 @@ export default function Community() {
                           <button
                             key={tag}
                             onClick={() => toggleTag(tag)}
-                            className={`px-3 py-1 rounded-full text-sm transition-all ${
-                              selectedTags.includes(tag)
-                                ? 'bg-primary text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
+                            className={`px-3 py-1 rounded-full text-sm transition-all ${selectedTags.includes(tag)
+                              ? 'bg-primary text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
                           >
                             {tag}
                           </button>
@@ -643,7 +653,7 @@ export default function Community() {
                 <p className="text-text-secondary mb-4">
                   Crie um novo grupo para começar uma discussão!
                 </p>
-                <button 
+                <button
                   onClick={() => setShowCreateGroup(true)}
                   className="btn-primary"
                 >
@@ -655,7 +665,7 @@ export default function Community() {
               filteredGroups.map((group) => {
                 const category = categories.find(c => c.id === group.category);
                 const IconComponent = category?.icon || Hash;
-                
+
                 return (
                   <motion.div
                     key={group.id}
@@ -681,9 +691,9 @@ export default function Community() {
                         </div>
                       )}
                     </div>
-                    
+
                     <p className="text-text-secondary text-sm mb-4 line-clamp-2">{group.description}</p>
-                    
+
                     {group.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-4">
                         {group.tags.slice(0, 3).map((tag) => (
@@ -701,7 +711,7 @@ export default function Community() {
                         )}
                       </div>
                     )}
-                    
+
                     <div className="flex items-center justify-between text-sm text-text-secondary mb-4">
                       <div className="flex items-center space-x-4">
                         <span className="flex items-center">
@@ -719,19 +729,18 @@ export default function Community() {
                         </span>
                       )}
                     </div>
-                    
+
                     <div className="flex space-x-2">
-                      <button 
+                      <button
                         onClick={() => handleJoinGroup(group.id)}
-                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                          group.isJoined
-                            ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                            : 'bg-primary text-white hover:bg-primary-600'
-                        }`}
+                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${group.isJoined
+                          ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                          : 'bg-primary text-white hover:bg-primary-600'
+                          }`}
                       >
                         {group.isJoined ? 'Sair do Grupo' : 'Entrar no Grupo'}
                       </button>
-                      
+
                       {group.isJoined && (
                         <button
                           onClick={() => setSelectedGroupForChat(group)}

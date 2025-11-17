@@ -20,6 +20,7 @@ model User {
   points            Int      @default(0)
   studyHours        Float    @default(0)
   level             Int      @default(1)
+  verified      Boolean   @default(false)
   role              String   @default("user") // "user", "admin", "moderator"
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

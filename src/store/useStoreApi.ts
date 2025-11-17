@@ -103,6 +103,7 @@ interface StudyHubStore {
   createPost: (content: string) => Promise<void>;
   likePost: (id: string) => Promise<void>;
   createComment: (postId: string, content: string) => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
 export const useStore = create<StudyHubStore>((set, get) => ({
@@ -421,6 +422,25 @@ export const useStore = create<StudyHubStore>((set, get) => ({
     } catch (error: any) {
       set({ error: error.message });
       throw error;
+    }
+  },
+
+  checkAuth: async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        // Opcional: validar o token com o backend
+        const response = await api.getProfile(); 
+        if (response.success) {
+          set({ isAuthenticated: true, user: response.data.user });
+        } else {
+          throw new Error('Token inválido');
+        }
+      } catch (error) {
+        // Se o token for inválido, limpa
+        localStorage.removeItem('token');
+        set({ isAuthenticated: false, user: null });
+      }
     }
   },
 }));

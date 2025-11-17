@@ -5,7 +5,8 @@ import {
   createTask, 
   updateTask, 
   deleteTask, 
-  completeTask 
+  completeTask,
+  getTaskStats // 👈 1. IMPORTE A NOVA FUNÇÃO
 } from '../controllers/taskController'
 import { authenticateToken } from '../middleware/auth'
 
@@ -16,12 +17,12 @@ router.use(authenticateToken)
 
 // CRUD de tarefas
 router.get('/', getTasks)
+router.get('/stats', getTaskStats) // 👈 2. ADICIONE A NOVA ROTA
 router.get('/:id', getTaskById)
 router.post('/', createTask)
 router.put('/:id', updateTask)
 router.delete('/:id', deleteTask)
+
 router.patch('/:id/complete', completeTask)
 
 export default router
-
-
