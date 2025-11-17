@@ -38,6 +38,7 @@ model User {
   ownedGroups       Group[] @relation("GroupOwner")
   sentInvitations   GroupInvitation[] @relation("GroupInviter")
   messageReactions  MessageReaction[]
+  notifications     Notification[]
   
   @@map("users")
 }
@@ -120,6 +121,7 @@ model Post {
   id            String   @id @default(cuid())
   userId        String
   content       String
+  tags          String[] @default([])
   likesCount    Int      @default(0)
   commentsCount Int      @default(0)
   createdAt     DateTime @default(now())
@@ -130,6 +132,19 @@ model Post {
   comments Comment[]
   
   @@map("posts")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  payload   Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }
 
 model PostLike {

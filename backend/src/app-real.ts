@@ -111,10 +111,10 @@ app.post('/api/auth/register', async (req, res) => {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no registro:', error)
     
-    if (error.name === 'ZodError') {
+    if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Dados inválidos',
@@ -122,7 +122,7 @@ app.post('/api/auth/register', async (req, res) => {
       })
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     })
@@ -175,10 +175,10 @@ app.post('/api/auth/login', async (req, res) => {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no login:', error)
     
-    if (error.name === 'ZodError') {
+    if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Dados inválidos',
@@ -186,7 +186,7 @@ app.post('/api/auth/login', async (req, res) => {
       })
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     })
@@ -232,9 +232,9 @@ app.get('/api/auth/profile', async (req, res) => {
       data: { user }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no perfil:', error)
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       message: 'Token inválido'
     })

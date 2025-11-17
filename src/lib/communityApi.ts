@@ -57,7 +57,8 @@ const getMockData = (url: string, options: RequestInit = {}) => {
             likes: 12,
             comments: 3,
             tags: ['estudo', 'produtividade'],
-            isLiked: false
+            liked: false,
+            shares: 0
           },
           {
             id: '2',
@@ -71,7 +72,8 @@ const getMockData = (url: string, options: RequestInit = {}) => {
             likes: 8,
             comments: 5,
             tags: ['matemática', 'cálculo'],
-            isLiked: true
+            liked: true,
+            shares: 0
           }
         ],
         total: 2
@@ -95,6 +97,7 @@ const getMockData = (url: string, options: RequestInit = {}) => {
             postCount: 23,
             isJoined: true,
             isOwner: false,
+            rules: [],
             createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           },
           {
@@ -108,6 +111,7 @@ const getMockData = (url: string, options: RequestInit = {}) => {
             postCount: 18,
             isJoined: false,
             isOwner: true,
+            rules: [],
             createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
           },
           {
@@ -121,6 +125,7 @@ const getMockData = (url: string, options: RequestInit = {}) => {
             postCount: 8,
             isJoined: false,
             isOwner: false,
+            rules: [],
             createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
           }
         ]

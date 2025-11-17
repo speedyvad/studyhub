@@ -31,13 +31,13 @@ export const getAchievements = async (req: Request, res: Response) => {
       }
     })
 
-    res.json({
+    return res.json({
       success: true,
       data: { achievements: achievementsWithStatus }
     })
   } catch (error) {
     console.error('Erro ao buscar conquistas:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao buscar conquistas' 
     })
@@ -56,13 +56,13 @@ export const getUserAchievements = async (req: Request, res: Response) => {
       orderBy: { unlockedAt: 'desc' }
     })
 
-    res.json({
+    return res.json({
       success: true,
       data: { achievements: userAchievements }
     })
   } catch (error) {
     console.error('Erro ao buscar conquistas do usuário:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao buscar conquistas do usuário' 
     })
@@ -185,7 +185,7 @@ export const checkAchievements = async (req: Request, res: Response) => {
       }
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: { 
         newAchievements,
@@ -194,7 +194,7 @@ export const checkAchievements = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao verificar conquistas:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao verificar conquistas' 
     })
@@ -217,13 +217,13 @@ export const getLeaderboard = async (req: Request, res: Response) => {
       take: parseInt(limit as string)
     })
 
-    res.json({
+    return res.json({
       success: true,
       data: { leaderboard }
     })
   } catch (error) {
     console.error('Erro ao buscar ranking:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao buscar ranking' 
     })

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, TrendingUp, Star, Users, Hash, Bell, X, Settings, BookOpen, Code, Calculator, Globe, Music, Palette, Zap, MessageCircle } from 'lucide-react';
 import communityApi from '../lib/communityApi';
+import socketLib from '../lib/socket';
 import type { Post, Group } from '../types/community';
 import toast from 'react-hot-toast';
 import GroupChat from '../components/GroupChat';
@@ -22,13 +23,15 @@ export default function Community() {
   });
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedGroupForChat, setSelectedGroupForChat] = useState<Group | null>(null);
-  const [showCreatePost, setShowCreatePost] = useState(false);
+  // `showCreatePost` state is handled in EnhancedCommunity; not used here
   const [newPost, setNewPost] = useState({
     content: '',
     tags: [] as string[]
   });
 
   useEffect(() => {
+    let mounted = true;
+
     const loadCommunityData = async () => {
       try {
         setLoading(true);
@@ -36,7 +39,8 @@ export default function Community() {
           communityApi.getPosts(),
           communityApi.getGroups()
         ]);
-        
+
+        if (!mounted) return;
         setPosts(postsResponse.data.posts || []);
         setGroups(groupsResponse.data.groups || []);
       } catch (error) {
@@ -45,11 +49,57 @@ export default function Community() {
         setPosts([]);
         setGroups([]);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
     loadCommunityData();
+
+    // Conectar socket e registrar listeners
+    const socket = socketLib.connectSocket();
+
+    const onPostCreated = (payload: any) => {
+      const newPost = payload?.post ?? payload;
+      if (!newPost || !newPost.id) return;
+      setPosts(prev => {
+        // evitar duplicatas
+        if (prev.some(p => p.id === newPost.id)) return prev;
+        return [newPost, ...prev];
+      });
+      toast.success('Um novo post foi publicado na comunidade!');
+    };
+
+    const onPostLiked = (payload: any) => {
+      const { postId, likes, liked } = payload ?? {};
+      if (!postId) return;
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: typeof likes === 'number' ? likes : p.likes, liked: typeof liked === 'boolean' ? liked : p.liked } : p));
+    };
+
+    const onCommentCreated = (payload: any) => {
+      const { postId } = payload ?? {};
+      if (!postId) return;
+      setPosts(prev => prev.map(p => {
+        if (p.id !== postId) return p;
+        const cur = typeof p.comments === 'number' ? p.comments : 0;
+        return { ...p, comments: cur + 1 } as any;
+      }));
+    };
+
+    socket.on('post:created', onPostCreated);
+    socket.on('post:liked', onPostLiked);
+    socket.on('comment:created', onCommentCreated);
+
+    return () => {
+      mounted = false;
+      try {
+        socket.off('post:created', onPostCreated);
+        socket.off('post:liked', onPostLiked);
+        socket.off('comment:created', onCommentCreated);
+      } catch (e) {
+        // ignore
+      }
+      // não desconectamos o socket globalmente para não perturbar outros componentes; se quiser, chamar socketLib.disconnectSocket()
+    };
   }, []);
 
   const filteredPosts = posts.filter(post => 
@@ -107,6 +157,7 @@ export default function Community() {
         isOwner: true,
         tags: groupData.tags,
         trendingScore: 0,
+        rules: [],
         createdAt: new Date().toISOString()
       };
 
@@ -150,30 +201,41 @@ export default function Community() {
       return;
     }
 
-    try {
-      // Adicionar o novo post à lista (implementar API depois)
-      const createdPost: Post = {
-        id: Date.now().toString(),
-        content: newPost.content,
-        author: {
-          id: '1',
-          name: 'Você',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-          verified: false
-        },
-        tags: selectedTags,
-        timestamp: new Date().toISOString(),
-        likes: 0,
-        comments: [],
-        isLiked: false
-      };
+    // Otimista: criar placeholder temporário
+    const tempId = `temp-${Date.now()}`;
+    const optimisticPost: Post = {
+      id: tempId,
+      content: newPost.content,
+      author: {
+        id: '1',
+        name: 'Você',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+        verified: false
+      },
+      tags: selectedTags,
+      timestamp: new Date().toISOString(),
+      likes: 0,
+      shares: 0,
+      comments: 0,
+      liked: false
+    };
 
-      setPosts([createdPost, ...posts]);
-      setNewPost({ content: '', tags: [] });
-      setSelectedTags([]);
-      setShowCreatePost(false);
-      toast.success('Post compartilhado com sucesso!');
+    setPosts(prev => [optimisticPost, ...prev]);
+    setNewPost({ content: '', tags: [] });
+    setSelectedTags([]);
+
+    try {
+      const res = await communityApi.createPost(optimisticPost.content, optimisticPost.tags || []);
+      const serverPost = res?.data?.post;
+      if (serverPost && serverPost.id) {
+        setPosts(prev => prev.map(p => p.id === tempId ? serverPost : p));
+      } else {
+        // se backend retornou sem post, apenas manter o otimista e alertar
+        toast.success('Post compartilhado (modo offline)');
+      }
     } catch (error) {
+      // Reverter post otimista
+      setPosts(prev => prev.filter(p => p.id !== tempId));
       console.error('Erro ao criar post:', error);
       toast.error('Erro ao compartilhar o post');
     }

@@ -23,7 +23,7 @@ const inviteUserSchema = z.object({
 // Listar grupos do usuário
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const userId = (req as any).user.id; // <-- CORREÇÃO APLICADA
     const { category, search, limit = 20, offset = 0 } = req.query;
 
     // Buscar grupos onde o usuário é membro
@@ -55,7 +55,7 @@ router.get('/', authenticateToken, async (req, res) => {
             { description: { contains: search as string, mode: 'insensitive' } },
             { tags: { has: search as string } }
           ]
-        }
+        })
       },
       include: {
         _count: {
@@ -104,7 +104,7 @@ router.get('/', authenticateToken, async (req, res) => {
       createdAt: group.createdAt
     }));
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         userGroups,
@@ -119,15 +119,15 @@ router.get('/', authenticateToken, async (req, res) => {
                 { description: { contains: search as string, mode: 'insensitive' } },
                 { tags: { has: search as string } }
               ]
-            }
+            })
           }
         })
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao buscar grupos:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     });
@@ -137,7 +137,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // Criar grupo
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const userId = (req as any).user.id; // <-- CORREÇÃO APLICADA
     const groupData = createGroupSchema.parse(req.body);
 
     // Criar grupo
@@ -165,7 +165,7 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Grupo criado com sucesso',
       data: {
@@ -186,7 +186,7 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
@@ -196,7 +196,7 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     console.error('Erro ao criar grupo:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     });
@@ -207,7 +207,7 @@ router.post('/', authenticateToken, async (req, res) => {
 router.post('/:groupId/join', authenticateToken, async (req, res) => {
   try {
     const { groupId } = req.params;
-    const userId = req.user!.id;
+    const userId = (req as any).user.id; // <-- CORREÇÃO APLICADA
 
     // Verificar se o grupo existe
     const group = await prisma.group.findUnique({
@@ -274,14 +274,15 @@ router.post('/:groupId/join', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json({
+    // 👇 CORREÇÃO AQUI
+    return res.json({
       success: true,
       message: 'Você entrou no grupo com sucesso'
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao entrar no grupo:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     });
@@ -292,7 +293,7 @@ router.post('/:groupId/join', authenticateToken, async (req, res) => {
 router.delete('/:groupId/leave', authenticateToken, async (req, res) => {
   try {
     const { groupId } = req.params;
-    const userId = req.user!.id;
+    const userId = (req as any).user.id; // <-- CORREÇÃO APLICADA
 
     // Verificar se o usuário é membro
     const membership = await prisma.groupMembership.findUnique({
@@ -332,14 +333,15 @@ router.delete('/:groupId/leave', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json({
+    // 👇 CORREÇÃO AQUI
+    return res.json({
       success: true,
       message: 'Você saiu do grupo com sucesso'
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao sair do grupo:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     });
@@ -351,7 +353,7 @@ router.post('/:groupId/invite', authenticateToken, async (req, res) => {
   try {
     const { groupId } = req.params;
     const { userId: invitedUserId } = inviteUserSchema.parse(req.body);
-    const inviterId = req.user!.id;
+    const inviterId = (req as any).user.id; // <-- CORREÇÃO APLICADA
 
     // Verificar se o convidador é admin do grupo
     const membership = await prisma.groupMembership.findUnique({
@@ -412,13 +414,14 @@ router.post('/:groupId/invite', authenticateToken, async (req, res) => {
       }
     });
 
-    res.status(201).json({
+    // 👇 CORREÇÃO AQUI
+    return res.status(201).json({
       success: true,
       message: 'Convite enviado com sucesso',
       data: { invitation }
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
@@ -428,7 +431,7 @@ router.post('/:groupId/invite', authenticateToken, async (req, res) => {
     }
 
     console.error('Erro ao convidar usuário:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     });
@@ -439,7 +442,7 @@ router.post('/:groupId/invite', authenticateToken, async (req, res) => {
 router.get('/:groupId', authenticateToken, async (req, res) => {
   try {
     const { groupId } = req.params;
-    const userId = req.user!.id;
+    const userId = (req as any).user.id; // <-- CORREÇÃO APLICADA
 
     const group = await prisma.group.findUnique({
       where: { id: groupId },
@@ -474,7 +477,8 @@ router.get('/:groupId', authenticateToken, async (req, res) => {
     const isMember = group.memberships.length > 0;
     const userRole = isMember ? group.memberships[0].role : null;
 
-    res.json({
+    // 👇 CORREÇÃO AQUI
+    return res.json({
       success: true,
       data: {
         group: {
@@ -484,7 +488,7 @@ router.get('/:groupId', authenticateToken, async (req, res) => {
           category: group.category,
           isPrivate: group.isPrivate,
           tags: group.tags,
-          memberCount: group._count.memberships,
+          memberCount: group._count.memberships, // <-- CORREÇÃO DO ERRO DE DIGITAÇÃO
           postCount: group._count.messages,
           isJoined: isMember,
           isOwner: group.ownerId === userId,
@@ -497,7 +501,7 @@ router.get('/:groupId', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao buscar grupo:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     });

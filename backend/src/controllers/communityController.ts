@@ -1,6 +1,15 @@
 import { Request, Response } from 'express'
 import { prisma } from '../lib/prisma'
+import { chatSocketManager } from '../app-websocket'
 import { z } from 'zod'
+
+interface AuthRequest extends Request {
+  user: {
+    id: string
+    name: string
+    email: string
+  }
+}
 
 // Schemas de validação
 const createPostSchema = z.object({
@@ -105,13 +114,13 @@ export const getPostById = async (req: Request, res: Response) => {
       })
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: { post }
     })
   } catch (error) {
     console.error('Erro ao buscar post:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao buscar post' 
     })
@@ -120,7 +129,7 @@ export const getPostById = async (req: Request, res: Response) => {
 
 export const createPost = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    const userId = (req as AuthRequest).user.id
     const { content } = createPostSchema.parse(req.body)
 
     const post = await prisma.post.create({
@@ -140,7 +149,14 @@ export const createPost = async (req: Request, res: Response) => {
       }
     })
 
-    res.status(201).json({
+    // Emitir evento em tempo real para clientes conectados (feed)
+    try {
+      chatSocketManager.broadcast('post:created', post)
+    } catch {
+      // se o servidor não estiver rodando via websocket, ignorar
+    }
+
+    return res.status(201).json({
       success: true,
       message: 'Post criado com sucesso',
       data: { post }
@@ -155,7 +171,7 @@ export const createPost = async (req: Request, res: Response) => {
       })
     }
     
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao criar post' 
     })
@@ -164,7 +180,7 @@ export const createPost = async (req: Request, res: Response) => {
 
 export const likePost = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    const userId = (req as AuthRequest).user.id
     const { id } = req.params
 
     // Verificar se o post existe
@@ -210,7 +226,12 @@ export const likePost = async (req: Request, res: Response) => {
         }
       })
 
-      res.json({
+      // emitir evento de like removido
+      try {
+        chatSocketManager.broadcast('post:liked', { postId: id, liked: false })
+      } catch { /* empty */ }
+
+      return res.json({
         success: true,
         message: 'Like removido',
         data: { liked: false }
@@ -234,7 +255,12 @@ export const likePost = async (req: Request, res: Response) => {
         }
       })
 
-      res.json({
+      // emitir evento de like adicionado
+      try {
+        chatSocketManager.broadcast('post:liked', { postId: id, liked: true })
+      } catch { /* empty */ }
+
+      return res.json({
         success: true,
         message: 'Post curtido!',
         data: { liked: true }
@@ -242,7 +268,7 @@ export const likePost = async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.error('Erro ao curtir post:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao curtir post' 
     })
@@ -251,7 +277,7 @@ export const likePost = async (req: Request, res: Response) => {
 
 export const createComment = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    const userId = (req as AuthRequest).user.id
     const { id } = req.params
     const { content } = createCommentSchema.parse(req.body)
 
@@ -295,7 +321,13 @@ export const createComment = async (req: Request, res: Response) => {
       }
     })
 
-    res.status(201).json({
+    // Emitir evento de novo comentário
+    try {
+      chatSocketManager.broadcast('comment:created', { postId: id, comment })
+    } catch {
+      // ignore if websocket not initialized
+    }
+    return res.status(201).json({
       success: true,
       message: 'Comentário adicionado com sucesso',
       data: { comment }
@@ -310,7 +342,7 @@ export const createComment = async (req: Request, res: Response) => {
       })
     }
     
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao criar comentário' 
     })
@@ -319,7 +351,7 @@ export const createComment = async (req: Request, res: Response) => {
 
 export const deletePost = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    const userId = (req as AuthRequest).user.id
     const { id } = req.params
 
     // Verificar se o post existe e pertence ao usuário
@@ -341,13 +373,13 @@ export const deletePost = async (req: Request, res: Response) => {
       where: { id }
     })
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Post deletado com sucesso'
     })
   } catch (error) {
     console.error('Erro ao deletar post:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao deletar post' 
     })
