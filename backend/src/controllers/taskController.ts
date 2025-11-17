@@ -77,13 +77,13 @@ export const getTaskById = async (req: Request, res: Response) => {
       })
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: { task }
     })
   } catch (error) {
     console.error('Erro ao buscar tarefa:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao buscar tarefa' 
     })
@@ -102,7 +102,7 @@ export const createTask = async (req: Request, res: Response) => {
       }
     })
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Tarefa criada com sucesso',
       data: { task }
@@ -117,7 +117,7 @@ export const createTask = async (req: Request, res: Response) => {
       })
     }
     
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao criar tarefa' 
     })
@@ -150,7 +150,7 @@ export const updateTask = async (req: Request, res: Response) => {
       data
     })
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Tarefa atualizada com sucesso',
       data: { task }
@@ -165,7 +165,7 @@ export const updateTask = async (req: Request, res: Response) => {
       })
     }
     
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao atualizar tarefa' 
     })
@@ -196,13 +196,13 @@ export const deleteTask = async (req: Request, res: Response) => {
       where: { id }
     })
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Tarefa deletada com sucesso'
     })
   } catch (error) {
     console.error('Erro ao deletar tarefa:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao deletar tarefa' 
     })
@@ -244,14 +244,14 @@ export const completeTask = async (req: Request, res: Response) => {
       }
     })
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Tarefa completada com sucesso! +10 pontos',
       data: { task }
     })
   } catch (error) {
     console.error('Erro ao completar tarefa:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao completar tarefa' 
     })

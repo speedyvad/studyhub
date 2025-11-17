@@ -25,6 +25,14 @@
     "paths": {
       "@/*": ["src/*"]
     },
+
+    // AQUI ESTÁ A CORREÇÃO:
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ],
+    // FIM DA CORREÇÃO
+
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
@@ -39,5 +47,3 @@
     "**/*.spec.ts"
   ]
 }
-
-

@@ -79,7 +79,7 @@ app.post('/api/auth/register', async (req, res) => {
       data: {
         name,
         email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         points: 0,
         studyHours: 0,
         level: 1
@@ -102,7 +102,7 @@ app.post('/api/auth/register', async (req, res) => {
       { expiresIn: '7d' }
     )
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Usuário criado com sucesso!',
       data: {
@@ -111,10 +111,10 @@ app.post('/api/auth/register', async (req, res) => {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no registro:', error)
     
-    if (error.name === 'ZodError') {
+    if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Dados inválidos',
@@ -122,7 +122,7 @@ app.post('/api/auth/register', async (req, res) => {
       })
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     })
@@ -147,7 +147,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Verificar senha
-    const isValidPassword = await bcrypt.compare(password, user.password)
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
     if (!isValidPassword) {
       return res.status(401).json({
@@ -164,9 +164,9 @@ app.post('/api/auth/login', async (req, res) => {
     )
 
     // Retornar dados do usuário (sem senha)
-    const { password: _, ...userWithoutPassword } = user
+    const { passwordHash: _, ...userWithoutPassword } = user;
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Login realizado com sucesso!',
       data: {
@@ -175,10 +175,10 @@ app.post('/api/auth/login', async (req, res) => {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no login:', error)
     
-    if (error.name === 'ZodError') {
+    if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: 'Dados inválidos',
@@ -186,7 +186,7 @@ app.post('/api/auth/login', async (req, res) => {
       })
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
     })
@@ -227,14 +227,14 @@ app.get('/api/auth/profile', async (req, res) => {
       })
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: { user }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no perfil:', error)
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       message: 'Token inválido'
     })

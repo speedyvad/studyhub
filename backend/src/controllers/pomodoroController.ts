@@ -1,6 +1,7 @@
-import { Request, Response } from 'express'
+import { Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { z } from 'zod'
+import { AuthRequest } from '../middleware/auth'
 
 // Schemas de validação
 const createSessionSchema = z.object({
@@ -12,9 +13,15 @@ const updateSessionSchema = z.object({
   duration: z.number().min(1).max(60).optional()
 })
 
-export const getSessions = async (req: Request, res: Response) => {
+export const getSessions = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Usuário não autenticado' 
+      })
+    }
+    const userId = req.user.id
     const { completed, limit = '50' } = req.query
 
     const where: any = { userId }
@@ -29,22 +36,28 @@ export const getSessions = async (req: Request, res: Response) => {
       take: parseInt(limit as string)
     })
 
-    res.json({
+    return res.json({
       success: true,
       data: { sessions }
     })
   } catch (error) {
     console.error('Erro ao buscar sessões:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao buscar sessões' 
     })
   }
 }
 
-export const getSessionById = async (req: Request, res: Response) => {
+export const getSessionById = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Usuário não autenticado' 
+      })
+    }
+    const userId = req.user.id
     const { id } = req.params
 
     const session = await prisma.pomodoroSession.findFirst({
@@ -61,22 +74,28 @@ export const getSessionById = async (req: Request, res: Response) => {
       })
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: { session }
     })
   } catch (error) {
     console.error('Erro ao buscar sessão:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao buscar sessão' 
     })
   }
 }
 
-export const createSession = async (req: Request, res: Response) => {
+export const createSession = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Usuário não autenticado' 
+      })
+    }
+    const userId = req.user.id
     const data = createSessionSchema.parse(req.body)
 
     const session = await prisma.pomodoroSession.create({
@@ -86,7 +105,7 @@ export const createSession = async (req: Request, res: Response) => {
       }
     })
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Sessão iniciada com sucesso',
       data: { session }
@@ -101,16 +120,22 @@ export const createSession = async (req: Request, res: Response) => {
       })
     }
     
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao criar sessão' 
     })
   }
 }
 
-export const completeSession = async (req: Request, res: Response) => {
+export const completeSession = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Usuário não autenticado' 
+      })
+    }
+    const userId = req.user.id
     const { id } = req.params
 
     // Verificar se a sessão existe e pertence ao usuário
@@ -159,7 +184,7 @@ export const completeSession = async (req: Request, res: Response) => {
       }
     })
 
-    res.json({
+    return res.json({
       success: true,
       message: `Sessão completada! +${pointsEarned} pontos`,
       data: { 
@@ -170,16 +195,22 @@ export const completeSession = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao completar sessão:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao completar sessão' 
     })
   }
 }
 
-export const getStats = async (req: Request, res: Response) => {
+export const getStats = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Usuário não autenticado' 
+      })
+    }
+    const userId = req.user.id
 
     // Estatísticas gerais
     const totalSessions = await prisma.pomodoroSession.count({
@@ -214,7 +245,7 @@ export const getStats = async (req: Request, res: Response) => {
       _count: { id: true }
     })
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         totalSessions,
@@ -225,7 +256,7 @@ export const getStats = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       message: 'Erro ao buscar estatísticas' 
     })

@@ -1,22 +1,13 @@
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, Socket as IOSocket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-interface AuthenticatedSocket extends Socket {
+interface AuthenticatedSocket extends IOSocket {
   userId: string;
   user: {
-    id: string;
-    name: string;
-    avatarUrl?: string;
-  };
-}
-
-interface Socket extends any {
-  userId?: string;
-  user?: {
     id: string;
     name: string;
     avatarUrl?: string;
@@ -59,6 +50,15 @@ export class ChatSocketManager {
 
     this.setupMiddleware();
     this.setupEventHandlers();
+  }
+
+  // Método genérico para emitir eventos globais
+  public broadcast(event: string, payload: any) {
+    try {
+      this.io.emit(event, payload);
+    } catch (err) {
+      console.error('Erro ao emitir evento broadcast:', err);
+    }
   }
 
   private setupMiddleware() {
@@ -104,22 +104,23 @@ export class ChatSocketManager {
   }
 
   private setupEventHandlers() {
-    this.io.on('connection', (socket: AuthenticatedSocket) => {
-      console.log(`Usuário ${socket.user.name} conectado: ${socket.id}`);
-      
+    this.io.on('connection', (socket: IOSocket) => {
+      const authSocket = socket as AuthenticatedSocket;
+      console.log(`Usuário ${authSocket.user?.name || 'desconhecido'} conectado: ${authSocket.id}`);
+
       // Armazenar socket do usuário
-      this.userSockets.set(socket.userId, socket.id);
+      if (authSocket.userId) this.userSockets.set(authSocket.userId, authSocket.id);
 
       // Evento: Entrar em um grupo
-      socket.on('join_group', async (data: { groupId: string }) => {
+      authSocket.on('join_group', async (data: { groupId: string }) => {
         try {
           const { groupId } = data;
-          
+
           // Verificar se o usuário é membro do grupo
           const membership = await prisma.groupMembership.findUnique({
             where: {
               userId_groupId: {
-                userId: socket.userId,
+                userId: authSocket.userId,
                 groupId: groupId
               }
             },
@@ -129,51 +130,51 @@ export class ChatSocketManager {
           });
 
           if (!membership) {
-            socket.emit('error', { message: 'Você não é membro deste grupo' });
+            authSocket.emit('error', { message: 'Você não é membro deste grupo' });
             return;
           }
 
           // Entrar na sala do grupo
-          socket.join(`group_${groupId}`);
-          
+          authSocket.join(`group_${groupId}`);
+
           // Notificar outros membros que o usuário entrou
-          socket.to(`group_${groupId}`).emit('user_joined', {
-            userId: socket.userId,
-            userName: socket.user.name,
+          authSocket.to(`group_${groupId}`).emit('user_joined', {
+            userId: authSocket.userId,
+            userName: authSocket.user?.name,
             timestamp: new Date()
           });
 
           // Enviar confirmação
-          socket.emit('joined_group', {
+          authSocket.emit('joined_group', {
             groupId,
             groupName: membership.group.name,
             message: 'Você entrou no chat do grupo'
           });
 
-          console.log(`Usuário ${socket.user.name} entrou no grupo ${groupId}`);
+          console.log(`Usuário ${authSocket.user?.name} entrou no grupo ${groupId}`);
         } catch (error) {
           console.error('Erro ao entrar no grupo:', error);
-          socket.emit('error', { message: 'Erro ao entrar no grupo' });
+          authSocket.emit('error', { message: 'Erro ao entrar no grupo' });
         }
       });
 
       // Evento: Sair de um grupo
-      socket.on('leave_group', (data: { groupId: string }) => {
+      authSocket.on('leave_group', (data: { groupId: string }) => {
         const { groupId } = data;
-        socket.leave(`group_${groupId}`);
-        
+        authSocket.leave(`group_${groupId}`);
+
         // Notificar outros membros
-        socket.to(`group_${groupId}`).emit('user_left', {
-          userId: socket.userId,
-          userName: socket.user.name,
+        authSocket.to(`group_${groupId}`).emit('user_left', {
+          userId: authSocket.userId,
+          userName: authSocket.user?.name,
           timestamp: new Date()
         });
 
-        console.log(`Usuário ${socket.user.name} saiu do grupo ${groupId}`);
+        console.log(`Usuário ${authSocket.user?.name} saiu do grupo ${groupId}`);
       });
 
       // Evento: Enviar mensagem
-      socket.on('send_message', async (data: { groupId: string; content: string; replyToId?: string }) => {
+      authSocket.on('send_message', async (data: { groupId: string; content: string; replyToId?: string }) => {
         try {
           const { groupId, content, replyToId } = data;
 
@@ -181,21 +182,21 @@ export class ChatSocketManager {
           const membership = await prisma.groupMembership.findUnique({
             where: {
               userId_groupId: {
-                userId: socket.userId,
+                userId: authSocket.userId,
                 groupId: groupId
               }
             }
           });
 
           if (!membership) {
-            socket.emit('error', { message: 'Você não é membro deste grupo' });
+            authSocket.emit('error', { message: 'Você não é membro deste grupo' });
             return;
           }
 
           // Salvar mensagem no banco
           const message = await prisma.chatMessage.create({
             data: {
-              userId: socket.userId,
+              userId: authSocket.userId,
               groupId: groupId,
               content: content,
               replyToId: replyToId || null
@@ -229,51 +230,51 @@ export class ChatSocketManager {
           // Enviar mensagem para todos os membros do grupo
           this.io.to(`group_${groupId}`).emit('new_message', messageData);
 
-          console.log(`Mensagem enviada no grupo ${groupId} por ${socket.user.name}`);
+          console.log(`Mensagem enviada no grupo ${groupId} por ${authSocket.user?.name}`);
         } catch (error) {
           console.error('Erro ao enviar mensagem:', error);
-          socket.emit('error', { message: 'Erro ao enviar mensagem' });
+          authSocket.emit('error', { message: 'Erro ao enviar mensagem' });
         }
       });
 
       // Evento: Usuário está digitando
-      socket.on('typing_start', (data: { groupId: string }) => {
+      authSocket.on('typing_start', (data: { groupId: string }) => {
         const { groupId } = data;
-        
+
         if (!this.typingUsers.has(groupId)) {
           this.typingUsers.set(groupId, new Map());
         }
 
         const typingUser: TypingUser = {
-          userId: socket.userId,
-          userName: socket.user.name,
+          userId: authSocket.userId,
+          userName: authSocket.user?.name || '',
           timestamp: new Date()
         };
 
-        this.typingUsers.get(groupId)!.set(socket.userId, typingUser);
-        
+        this.typingUsers.get(groupId)!.set(authSocket.userId, typingUser);
+
         // Notificar outros membros
-        socket.to(`group_${groupId}`).emit('user_typing', {
+        authSocket.to(`group_${groupId}`).emit('user_typing', {
           users: Array.from(this.typingUsers.get(groupId)!.values())
         });
       });
 
       // Evento: Usuário parou de digitar
-      socket.on('typing_stop', (data: { groupId: string }) => {
+      authSocket.on('typing_stop', (data: { groupId: string }) => {
         const { groupId } = data;
-        
+
         if (this.typingUsers.has(groupId)) {
-          this.typingUsers.get(groupId)!.delete(socket.userId);
-          
+          this.typingUsers.get(groupId)!.delete(authSocket.userId);
+
           // Notificar outros membros
-          socket.to(`group_${groupId}`).emit('user_typing', {
+          authSocket.to(`group_${groupId}`).emit('user_typing', {
             users: Array.from(this.typingUsers.get(groupId)!.values())
           });
         }
       });
 
       // Evento: Adicionar reação
-      socket.on('add_reaction', async (data: { messageId: string; emoji: string }) => {
+      authSocket.on('add_reaction', async (data: { messageId: string; emoji: string }) => {
         try {
           const { messageId, emoji } = data;
 
@@ -284,7 +285,7 @@ export class ChatSocketManager {
               group: {
                 memberships: {
                   some: {
-                    userId: socket.userId
+                    userId: authSocket.userId
                   }
                 }
               }
@@ -292,7 +293,7 @@ export class ChatSocketManager {
           });
 
           if (!message) {
-            socket.emit('error', { message: 'Mensagem não encontrada' });
+            authSocket.emit('error', { message: 'Mensagem não encontrada' });
             return;
           }
 
@@ -301,7 +302,7 @@ export class ChatSocketManager {
             where: {
               messageId_userId_emoji: {
                 messageId,
-                userId: socket.userId,
+                userId: authSocket.userId,
                 emoji
               }
             }
@@ -319,7 +320,7 @@ export class ChatSocketManager {
             await prisma.messageReaction.create({
               data: {
                 messageId,
-                userId: socket.userId,
+                userId: authSocket.userId,
                 emoji
               }
             });
@@ -351,24 +352,24 @@ export class ChatSocketManager {
 
         } catch (error) {
           console.error('Erro ao adicionar reação:', error);
-          socket.emit('error', { message: 'Erro ao adicionar reação' });
+          authSocket.emit('error', { message: 'Erro ao adicionar reação' });
         }
       });
 
       // Evento: Desconexão
-      socket.on('disconnect', () => {
-        console.log(`Usuário ${socket.user.name} desconectado: ${socket.id}`);
-        
+      authSocket.on('disconnect', () => {
+        console.log(`Usuário ${authSocket.user?.name} desconectado: ${authSocket.id}`);
+
         // Remover socket do usuário
-        this.userSockets.delete(socket.userId);
-        
+        this.userSockets.delete(authSocket.userId);
+
         // Limpar indicadores de digitação
         for (const [groupId, typingMap] of this.typingUsers.entries()) {
-          if (typingMap.has(socket.userId)) {
-            typingMap.delete(socket.userId);
-            
+          if (typingMap.has(authSocket.userId)) {
+            typingMap.delete(authSocket.userId);
+
             // Notificar outros membros
-            socket.to(`group_${groupId}`).emit('user_typing', {
+            authSocket.to(`group_${groupId}`).emit('user_typing', {
               users: Array.from(typingMap.values())
             });
           }

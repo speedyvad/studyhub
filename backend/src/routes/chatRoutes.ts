@@ -1,16 +1,18 @@
 import { Router } from 'express';
+import type { AuthRequest } from '../middleware/auth';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
+type ReactionSummary = { emoji: string; users: { id: string; name: string }[] };
 
 // Obter histórico de mensagens de um grupo
-router.get('/groups/:groupId/messages', authenticateToken, async (req, res) => {
+router.get('/groups/:groupId/messages', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { groupId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
-    const userId = req.user!.id;
+    const userId = req.user!.id; // ✅ Agora vai funcionar sem (req as any)
 
     // Verificar se o usuário é membro do grupo
     const membership = await prisma.groupMembership.findUnique({
@@ -23,10 +25,8 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'Você não é membro deste grupo'
-      });
+      res.status(403).json({ success: false, message: 'Você não é membro deste grupo' });
+      return;
     }
 
     // Buscar mensagens
@@ -105,7 +105,7 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res) => {
           });
         }
         return acc;
-      }, [] as any[])
+      }, [] as ReactionSummary[])
     }));
 
     res.json({
@@ -126,11 +126,11 @@ router.get('/groups/:groupId/messages', authenticateToken, async (req, res) => {
 });
 
 // Enviar mensagem (endpoint REST como fallback)
-router.post('/groups/:groupId/messages', authenticateToken, async (req, res) => {
+router.post('/groups/:groupId/messages', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { groupId } = req.params;
     const { content, replyToId } = req.body;
-    const userId = req.user!.id;
+    const userId = req.user!.id; // ✅ Agora vai funcionar
 
     // Verificar se o usuário é membro do grupo
     const membership = await prisma.groupMembership.findUnique({
@@ -143,10 +143,8 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res) => 
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'Você não é membro deste grupo'
-      });
+      res.status(403).json({ success: false, message: 'Você não é membro deste grupo' });
+      return;
     }
 
     // Criar mensagem
@@ -197,11 +195,11 @@ router.post('/groups/:groupId/messages', authenticateToken, async (req, res) => 
 });
 
 // Editar mensagem
-router.put('/messages/:messageId', authenticateToken, async (req, res) => {
+router.put('/messages/:messageId', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { messageId } = req.params;
     const { content } = req.body;
-    const userId = req.user!.id;
+    const userId = req.user!.id; // ✅ Agora vai funcionar
 
     // Verificar se a mensagem existe e pertence ao usuário
     const message = await prisma.chatMessage.findFirst({
@@ -212,10 +210,8 @@ router.put('/messages/:messageId', authenticateToken, async (req, res) => {
     });
 
     if (!message) {
-      return res.status(404).json({
-        success: false,
-        message: 'Mensagem não encontrada'
-      });
+      res.status(404).json({ success: false, message: 'Mensagem não encontrada' });
+      return;
     }
 
     // Atualizar mensagem
@@ -266,10 +262,10 @@ router.put('/messages/:messageId', authenticateToken, async (req, res) => {
 });
 
 // Deletar mensagem
-router.delete('/messages/:messageId', authenticateToken, async (req, res) => {
+router.delete('/messages/:messageId', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { messageId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user!.id; // ✅ Agora vai funcionar
 
     // Verificar se a mensagem existe e pertence ao usuário
     const message = await prisma.chatMessage.findFirst({
@@ -280,10 +276,8 @@ router.delete('/messages/:messageId', authenticateToken, async (req, res) => {
     });
 
     if (!message) {
-      return res.status(404).json({
-        success: false,
-        message: 'Mensagem não encontrada'
-      });
+      res.status(404).json({ success: false, message: 'Mensagem não encontrada' });
+      return;
     }
 
     // Deletar mensagem
@@ -306,10 +300,10 @@ router.delete('/messages/:messageId', authenticateToken, async (req, res) => {
 });
 
 // Obter membros de um grupo
-router.get('/groups/:groupId/members', authenticateToken, async (req, res) => {
+router.get('/groups/:groupId/members', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { groupId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user!.id; // ✅ Agora vai funcionar
 
     // Verificar se o usuário é membro do grupo
     const membership = await prisma.groupMembership.findUnique({
@@ -322,10 +316,8 @@ router.get('/groups/:groupId/members', authenticateToken, async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'Você não é membro deste grupo'
-      });
+      res.status(403).json({ success: false, message: 'Você não é membro deste grupo' });
+      return;
     }
 
     // Buscar membros

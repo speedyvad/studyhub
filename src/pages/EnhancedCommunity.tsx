@@ -78,98 +78,35 @@ export default function EnhancedCommunity() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
 
-  // Mock data
-  const mockGroups: Group[] = [
-    {
-      id: '1',
-      name: 'Matemática Avançada',
-      description: 'Grupo para discussões sobre matemática de nível superior, cálculo, álgebra linear e mais.',
-      category: 'Matemática',
-      memberCount: 1250,
-      postCount: 89,
-      isPrivate: false,
-      isJoined: true,
-      isOwner: false,
-      tags: ['Cálculo', 'Álgebra', 'Análise'],
-      trendingScore: 85,
-      rules: ['Seja respeitoso', 'Mantenha o foco'],
-      createdAt: new Date('2024-01-15')
-    },
-    {
-      id: '2',
-      name: 'Programação Web',
-      description: 'Compartilhe projetos, dúvidas e aprenda sobre desenvolvimento web moderno.',
-      category: 'Programação',
-      memberCount: 2100,
-      postCount: 156,
-      isPrivate: false,
-      isJoined: false,
-      isOwner: false,
-      tags: ['React', 'JavaScript', 'CSS'],
-      trendingScore: 92,
-      rules: ['Código limpo', 'Compartilhe conhecimento'],
-      createdAt: new Date('2024-01-10')
-    }
-  ];
+  // Estado para os posts reais
+  const [posts, setPosts] = useState<Post[]>([]);
 
-  const mockPosts: Post[] = [
-    {
-      id: '1',
-      content: 'Acabei de resolver um problema de cálculo que estava me quebrando a cabeça! 🎉\n\nA chave era usar integração por partes de forma criativa. Alguém mais já passou por isso?',
-      author: {
-        id: 'user1',
-        name: 'Ana Silva',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=40&h=40&fit=crop&crop=face',
-        verified: true,
-        followers: 1250
-      },
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      likes: 45,
-      liked: false,
-      comments: 12,
-      shares: 8,
-      bookmarked: false,
-      upvotes: 38,
-      downvotes: 2,
-      voted: null,
-      trendingScore: 156,
-      category: 'Matemática',
-      tags: ['Cálculo', 'Integração', 'Dúvida'],
-      group: {
-        id: '1',
-        name: 'Matemática Avançada',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face'
-      }
-    },
-    {
-      id: '2',
-      content: 'Dica de ouro para quem está estudando React: use o React DevTools! 🔧\n\nIsso mudou completamente minha forma de debugar componentes. A performance melhorou muito.',
-      author: {
-        id: 'user2',
-        name: 'Carlos Dev',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-        verified: false,
-        followers: 890
-      },
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      likes: 78,
-      liked: true,
-      comments: 23,
-      shares: 15,
-      bookmarked: true,
-      upvotes: 65,
-      downvotes: 3,
-      voted: 'up',
-      trendingScore: 234,
-      category: 'Programação',
-      tags: ['React', 'Dica', 'Debugging']
-    }
-  ];
+  // Carregar posts da API ao montar
+  useEffect(() => {
+    async function fetchPosts() {
+      // Estado para os grupos reais
+      const [groups, setGroups] = useState<Group[]>([]);
 
-  const categories = [
-    'Todas', 'Matemática', 'Física', 'Química', 'Biologia', 'História', 
-    'Geografia', 'Português', 'Inglês', 'Programação', 'Filosofia', 'Arte'
-  ];
+      // Carregar grupos da API ao montar
+      useEffect(() => {
+        async function fetchGroups() {
+          try {
+            const response = await communityApi.getGroups();
+            setGroups(response.data.groups);
+          } catch (error) {
+            console.error('Erro ao carregar grupos:', error);
+          }
+        }
+        fetchGroups();
+      }, []);
+  // useWebSocket({
+  //   url: FEED_WS_URL,
+  //   onMessage: (message) => {
+  //     if (message.type === 'post:created') {
+  //       setPosts((prev) => [message.data, ...prev]);
+  //     }
+  //   }
+  // });
 
   const handleCreatePost = (content: string) => {
     console.log('Creating post:', content);
@@ -419,7 +356,7 @@ export default function EnhancedCommunity() {
                 transition={{ duration: 0.5 }}
               >
                 <EnhancedFeed
-                  posts={mockPosts}
+                  posts={posts}
                   onLike={handleLike}
                   onShare={handleShare}
                   onBookmark={handleBookmark}
@@ -443,7 +380,7 @@ export default function EnhancedCommunity() {
                     : 'grid-cols-1'
                 }`}
               >
-                {mockGroups.map((group) => (
+                {groups.map((group) => (
                   <GroupCard
                     key={group.id}
                     group={group}
