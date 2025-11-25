@@ -25,7 +25,7 @@ import groupsApi from '../lib/groupsApi';
 import type { Task, TaskStats } from '../types/task';
 import type { TaskGroup } from '../types/group';
 
-type Priority = 'low' | 'medium' | 'high';
+type Priority = 'LOW' | 'MEDIUM' | 'HIGH';
 type FilterType = 'all' | 'pending' | 'completed';
 
 const subjects = [
@@ -102,7 +102,7 @@ export default function Tasks() {
     title: '',
     description: '',
     subject: 'Matemática',
-    priority: 'medium' as Priority
+    priority: 'MEDIUM' as Priority
   });
 
   const handleSubmit = async (taskData: any) => {
@@ -369,7 +369,7 @@ export default function Tasks() {
             title: task.title,
             description: task.description || '',
             subject: task.subject,
-            priority: task.priority.toLowerCase() as 'low' | 'medium' | 'high',
+            priority: task.priority as 'LOW' | 'MEDIUM' | 'HIGH',
             dueDate: task.dueDate || '',
             tags: [] // Por enquanto, sem tags
           } : undefined;

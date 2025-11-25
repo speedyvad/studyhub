@@ -22,7 +22,7 @@ export interface CreateTaskData {
   title: string;
   description?: string;
   category?: string;
-  priority?: 'low' | 'medium' | 'high';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
   dueDate?: string;
 }
 
@@ -30,7 +30,7 @@ export interface UpdateTaskData {
   title?: string;
   description?: string;
   subject?: string;
-  priority?: 'low' | 'medium' | 'high';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
   completed?: boolean;
   dueDate?: string;
 }

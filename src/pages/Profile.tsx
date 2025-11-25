@@ -15,6 +15,7 @@ import {
   User
 } from 'lucide-react';
 import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
+import authApi from '../lib/authApi';
 import uploadApi from '../lib/uploadApi';
 import toast from 'react-hot-toast';
 
@@ -28,9 +29,23 @@ export default function Profile() {
   });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
 
-  const handleSave = () => {
-    // Aqui você salvaria os dados no backend
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      const response = await authApi.updateProfile({
+        name: editData.name,
+        bio: editData.bio,
+        favoriteSubjects: editData.favoriteSubjects
+      });
+
+      if (response.success) {
+        updateUser(response.data.user);
+        toast.success('Perfil atualizado com sucesso!');
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      toast.error('Erro ao atualizar perfil');
+    }
   };
 
   const handleCancel = () => {
@@ -47,23 +62,27 @@ export default function Profile() {
     setSelectedPhoto(file);
     
     try {
-      // Converter arquivo para base64
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target?.result as string;
+      // Fazer upload do arquivo
+      const uploadResponse = await uploadApi.uploadFile(file);
+      
+      if (uploadResponse.success) {
+        const newAvatarUrl = uploadResponse.data.url;
         
-        // Fazer upload para o backend
-        const response = await uploadApi.uploadAvatar(base64);
-        
-        if (response.success) {
+        // Atualizar perfil com a nova URL
+        const updateResponse = await authApi.updateProfile({
+          avatarUrl: newAvatarUrl
+        });
+
+        if (updateResponse.success) {
           toast.success('Foto de perfil atualizada!');
           // Atualizar o usuário no store
-          updateUser({ avatar: base64 });
+          updateUser({ avatar: newAvatarUrl });
         } else {
-          toast.error('Erro ao atualizar foto de perfil');
+          toast.error('Erro ao salvar foto no perfil');
         }
-      };
-      reader.readAsDataURL(file);
+      } else {
+        toast.error('Erro ao fazer upload da foto');
+      }
     } catch (error) {
       console.error('Erro ao fazer upload da foto:', error);
       toast.error('Erro ao fazer upload da foto');
@@ -74,8 +93,10 @@ export default function Profile() {
     setSelectedPhoto(null);
     
     try {
-      // Remover avatar (usar URL padrão)
-      const response = await uploadApi.uploadAvatar('');
+      // Remover avatar (atualizar com string vazia)
+      const response = await authApi.updateProfile({
+        avatarUrl: ''
+      });
       
       if (response.success) {
         toast.success('Foto removida');

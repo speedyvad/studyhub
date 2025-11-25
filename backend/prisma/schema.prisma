@@ -17,6 +17,7 @@ model User {
   passwordHash      String
   avatarUrl         String?
   bio               String?
+  favoriteSubjects  String[] @default([])
   points            Int      @default(0)
   studyHours        Float    @default(0)
   level             Int      @default(1)

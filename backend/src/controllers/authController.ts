@@ -16,6 +16,13 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Senha é obrigatória')
 })
 
+const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
+  bio: z.string().max(500, 'Bio muito longa').optional(),
+  favoriteSubjects: z.array(z.string()).optional(),
+  avatarUrl: z.string().optional()
+})
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = registerSchema.parse(req.body)
@@ -49,6 +56,7 @@ export const register = async (req: Request, res: Response) => {
         points: true,
         studyHours: true,
         level: true,
+        avatarUrl: true,
         createdAt: true
       }
     })
@@ -129,7 +137,8 @@ export const login = async (req: Request, res: Response) => {
           email: user.email,
           points: user.points,
           studyHours: user.studyHours,
-          level: user.level
+          level: user.level,
+          avatarUrl: user.avatarUrl
         }
       }
     })
@@ -162,6 +171,50 @@ export const getProfile = async (req: Request, res: Response) => {
     })
   } catch (error) {
     console.error('Erro ao buscar perfil:', error)
+    return res.status(500).json({ 
+      success: false,
+      message: 'Erro interno do servidor' 
+    })
+  }
+}
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id
+    const data = updateProfileSchema.parse(req.body)
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        bio: true,
+        favoriteSubjects: true,
+        avatarUrl: true,
+        points: true,
+        studyHours: true,
+        level: true,
+        role: true
+      }
+    })
+
+    return res.json({
+      success: true,
+      message: 'Perfil atualizado com sucesso',
+      data: { user }
+    })
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error)
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false,
+        message: error.errors[0].message 
+      })
+    }
+    
     return res.status(500).json({ 
       success: false,
       message: 'Erro interno do servidor' 

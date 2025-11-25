@@ -5,6 +5,7 @@ import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
 import { createServer } from 'http'
+import path from 'path'
 import ChatSocketManager from './websocket/chatSocket'
 
 // Importar rotas
@@ -15,6 +16,7 @@ import achievementRoutes from './routes/achievements'
 import communityRoutes from './routes/community'
 import chatRoutes from './routes/chatRoutes'
 import groupRoutes from './routes/groupRoutes'
+import uploadRoutes from './routes/uploadRoutes'
 
 // Carregar variáveis de ambiente
 dotenv.config()
@@ -23,7 +25,9 @@ const app = express()
 const server = createServer(app)
 
 // Middleware de segurança
-app.use(helmet())
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}))
 
 // CORS
 app.use(cors({
@@ -68,6 +72,10 @@ app.use('/api/achievements', achievementRoutes)
 app.use('/api/community', communityRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/groups', groupRoutes)
+app.use('/api/upload', uploadRoutes)
+
+// Servir arquivos estáticos (uploads)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 // Rota de health check
 app.get('/api/health', (req, res) => {

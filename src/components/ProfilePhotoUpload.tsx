@@ -51,12 +51,9 @@ export default function ProfilePhotoUpload({
     };
     reader.readAsDataURL(file);
 
-    // Simular upload
-    setTimeout(() => {
-      onPhotoSelect(file);
-      setIsUploading(false);
-      toast.success('Foto de perfil atualizada!');
-    }, 1000);
+    setIsUploading(true);
+    onPhotoSelect(file);
+    setIsUploading(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {

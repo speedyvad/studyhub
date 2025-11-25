@@ -36,7 +36,10 @@ export const authenticateToken = async (
         name: true,
         points: true,
         studyHours: true,
-        level: true
+        level: true,
+        avatarUrl: true,
+        bio: true,
+        favoriteSubjects: true
       }
     })
 
@@ -78,7 +81,10 @@ export const optionalAuth = async (
           name: true,
           points: true,
           studyHours: true,
-          level: true
+          level: true,
+          avatarUrl: true,
+          bio: true,
+          favoriteSubjects: true
         }
       })
 

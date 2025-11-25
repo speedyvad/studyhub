@@ -57,6 +57,7 @@ interface StudyHubStore {
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   register: (name: string, email: string, password: string) => void;
+  checkAuth: () => Promise<void>;
 
   // Tasks
   tasks: Task[];
@@ -198,6 +199,7 @@ export const useStore = create<StudyHubStore>((set, get) => ({
           email: response.data.user.email,
           points: response.data.user.points,
           studyHours: response.data.user.studyHours,
+          avatar: response.data.user.avatarUrl,
           favoriteSubjects: []
         };
         localStorage.setItem('token', response.data.token);
@@ -242,6 +244,7 @@ export const useStore = create<StudyHubStore>((set, get) => ({
           email: response.data.user.email,
           points: response.data.user.points,
           studyHours: response.data.user.studyHours,
+          avatar: response.data.user.avatarUrl,
           favoriteSubjects: []
         };
         localStorage.setItem('token', response.data.token);
@@ -266,6 +269,34 @@ export const useStore = create<StudyHubStore>((set, get) => ({
       }
       
       throw new Error('Erro inesperado. Tente novamente.');
+    }
+  },
+
+  checkAuth: async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await authApi.getProfile();
+        if (response.success) {
+          const userData: User = {
+            id: response.data.user.id,
+            name: response.data.user.name,
+            email: response.data.user.email,
+            points: response.data.user.points,
+            studyHours: response.data.user.studyHours,
+            avatar: response.data.user.avatarUrl,
+            bio: response.data.user.bio,
+            favoriteSubjects: response.data.user.favoriteSubjects || []
+          };
+          set({ isAuthenticated: true, user: userData });
+        } else {
+          localStorage.removeItem('token');
+          set({ isAuthenticated: false, user: null });
+        }
+      } catch {
+        localStorage.removeItem('token');
+        set({ isAuthenticated: false, user: null });
+      }
     }
   },
 

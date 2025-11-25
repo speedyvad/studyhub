@@ -86,6 +86,10 @@ class ChatService {
     });
 
     this.socket.on('new_message', (message: ChatMessage) => {
+      // Converter timestamp para Date
+      if (typeof message.timestamp === 'string') {
+        message.timestamp = new Date(message.timestamp);
+      }
       this.messageCallbacks.forEach(callback => callback(message));
     });
 
@@ -111,7 +115,7 @@ class ChatService {
   }
 
   // Conectar ao chat de um grupo
-  connectToGroup(groupId: string, userId: string) {
+  connectToGroup(groupId: string, _userId: string) {
     if (!this.socket) {
       this.initializeSocket();
     }
@@ -134,7 +138,7 @@ class ChatService {
   }
 
   // Enviar mensagem
-  sendMessage(content: string, author: ChatMessage['author']) {
+  sendMessage(content: string, author: ChatMessage['author'], type: 'text' | 'image' | 'file' = 'text') {
     if (!this.socket || !this.currentGroupId) {
       console.error('WebSocket não conectado ou grupo não selecionado');
       return;
@@ -143,12 +147,13 @@ class ChatService {
     this.socket.emit('send_message', {
       groupId: this.currentGroupId,
       content,
-      author
+      author,
+      type: type.toUpperCase()
     });
   }
 
   // Indicar que está digitando
-  startTyping(userId: string, userName: string) {
+  startTyping(_userId: string, _userName: string) {
     if (!this.socket || !this.currentGroupId) {
       return;
     }
@@ -157,7 +162,7 @@ class ChatService {
   }
 
   // Parar de indicar que está digitando
-  stopTyping(userId: string) {
+  stopTyping(_userId: string) {
     if (!this.socket || !this.currentGroupId) {
       return;
     }
@@ -166,7 +171,7 @@ class ChatService {
   }
 
   // Adicionar reação a uma mensagem
-  addReaction(messageId: string, emoji: string, userId: string) {
+  addReaction(messageId: string, emoji: string, _userId: string) {
     if (!this.socket) {
       return;
     }
@@ -175,7 +180,7 @@ class ChatService {
   }
 
   // Responder a uma mensagem
-  replyToMessage(messageId: string, content: string, author: ChatMessage['author']) {
+  replyToMessage(messageId: string, content: string, _author: ChatMessage['author']) {
     if (!this.socket || !this.currentGroupId) {
       return;
     }
@@ -232,7 +237,14 @@ class ChatService {
       }
 
       const data = await response.json();
-      return data.data.messages || [];
+      const messages = data.data.messages || [];
+      
+      // Converter timestamps para Date
+      return messages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+        editedAt: msg.editedAt ? new Date(msg.editedAt) : undefined
+      }));
     } catch (error) {
       console.error('Erro ao carregar histórico:', error);
       return [];

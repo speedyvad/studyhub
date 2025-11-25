@@ -174,9 +174,9 @@ export class ChatSocketManager {
       });
 
       // Evento: Enviar mensagem
-      authSocket.on('send_message', async (data: { groupId: string; content: string; replyToId?: string }) => {
+      authSocket.on('send_message', async (data: { groupId: string; content: string; replyToId?: string; type?: 'TEXT' | 'IMAGE' | 'FILE' }) => {
         try {
-          const { groupId, content, replyToId } = data;
+          const { groupId, content, replyToId, type = 'TEXT' } = data;
 
           // Verificar se o usuário é membro do grupo
           const membership = await prisma.groupMembership.findUnique({
@@ -199,7 +199,8 @@ export class ChatSocketManager {
               userId: authSocket.userId,
               groupId: groupId,
               content: content,
-              replyToId: replyToId || null
+              replyToId: replyToId || null,
+              messageType: type
             },
             include: {
               user: {
@@ -223,14 +224,14 @@ export class ChatSocketManager {
               role: membership.role === 'ADMIN' ? 'admin' : 'member'
             },
             timestamp: message.createdAt,
-            type: 'text',
+            type: message.messageType.toLowerCase() as 'text' | 'image' | 'file' | 'system',
             groupId: groupId
           };
 
           // Enviar mensagem para todos os membros do grupo
           this.io.to(`group_${groupId}`).emit('new_message', messageData);
 
-          console.log(`Mensagem enviada no grupo ${groupId} por ${authSocket.user?.name}`);
+          console.log(`Mensagem (${type}) enviada no grupo ${groupId} por ${authSocket.user?.name}`);
         } catch (error) {
           console.error('Erro ao enviar mensagem:', error);
           authSocket.emit('error', { message: 'Erro ao enviar mensagem' });
@@ -342,11 +343,11 @@ export class ChatSocketManager {
           // Notificar todos os membros do grupo
           this.io.to(`group_${message.groupId}`).emit('message_reaction_updated', {
             messageId,
-            reactions: reactions.map(r => ({
+            reactions: reactions.map((r: any) => ({
               emoji: r.emoji,
               users: reactions
-                .filter(reaction => reaction.emoji === r.emoji)
-                .map(reaction => reaction.user)
+                .filter((reaction: any) => reaction.emoji === r.emoji)
+                .map((reaction: any) => reaction.user)
             }))
           });
 

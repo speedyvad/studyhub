@@ -16,6 +16,21 @@ const uploadApi = {
       body: JSON.stringify({ avatarUrl })
     });
     return response.json();
+  },
+
+  uploadFile: async (file: File): Promise<{ success: boolean; data: { url: string; filename: string; mimetype: string; size: number } }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    return response.json();
   }
 };
 

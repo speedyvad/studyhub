@@ -134,7 +134,7 @@ export const useStore = create<StudyHubStore>((set, get) => ({
       if (response.success) {
         localStorage.setItem('token', response.data.token);
         set({
-          user: response.data.user,
+          user: { ...response.data.user, avatar: response.data.user.avatarUrl },
           isAuthenticated: true,
           loading: false,
         });
@@ -155,7 +155,7 @@ export const useStore = create<StudyHubStore>((set, get) => ({
       if (response.success) {
         localStorage.setItem('token', response.data.token);
         set({
-          user: response.data.user,
+          user: { ...response.data.user, avatar: response.data.user.avatarUrl },
           isAuthenticated: true,
           loading: false,
         });
@@ -432,7 +432,7 @@ export const useStore = create<StudyHubStore>((set, get) => ({
         // Opcional: validar o token com o backend
         const response = await api.getProfile(); 
         if (response.success) {
-          set({ isAuthenticated: true, user: response.data.user });
+          set({ isAuthenticated: true, user: { ...response.data.user, avatar: response.data.user.avatarUrl } });
         } else {
           throw new Error('Token inválido');
         }

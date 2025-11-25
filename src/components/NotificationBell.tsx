@@ -17,7 +17,11 @@ interface Notification {
   isRead: boolean;
 }
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  align?: 'left' | 'right';
+}
+
+export default function NotificationBell({ align = 'right' }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -105,7 +109,7 @@ export default function NotificationBell() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
+            className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50`}
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}

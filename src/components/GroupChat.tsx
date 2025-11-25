@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { chatService, type ChatMessage, type TypingUser, type GroupMember } from '../services/chatServiceReal';
+import uploadApi from '../lib/uploadApi';
+import { useStore } from '../store/useStoreApi';
 
 // Usar o tipo ChatMessage do serviço
 type Message = ChatMessage;
@@ -44,9 +46,13 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
   const [isMuted, setIsMuted] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<number | null>(null);
+  const { user } = useStore();
 
   // Conectar ao chat quando o componente abrir
   useEffect(() => {
@@ -119,24 +125,56 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
     scrollToBottom();
   }, [messages]);
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const toastId = toast.loading('Enviando arquivo...');
+
+    try {
+      const response = await uploadApi.uploadFile(file);
+      if (response.success) {
+        const author = {
+          id: user?.id || 'current-user',
+          name: user?.name || 'Você',
+          avatar: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          role: 'member' as const
+        };
+        
+        // Send message with URL
+        chatService.sendMessage(response.data.url, author, type);
+        toast.success('Arquivo enviado!', { id: toastId });
+      } else {
+        toast.error('Erro ao enviar arquivo', { id: toastId });
+      }
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      toast.error('Erro ao enviar arquivo', { id: toastId });
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
 
     const author = {
-      id: 'current-user',
-      name: 'Você',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      id: user?.id || 'current-user',
+      name: user?.name || 'Você',
+      avatar: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
       role: 'member' as const
     };
 
     // Enviar mensagem através do serviço
-    chatService.sendMessage(newMessage, author);
+    chatService.sendMessage(newMessage, author, 'text');
     
     // Parar de indicar que está digitando
     chatService.stopTyping('current-user');
     
     setNewMessage('');
-    toast.success('Mensagem enviada!');
   };
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,6 +229,16 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
     } else {
       return date.toLocaleDateString('pt-BR');
     }
+  };
+
+  const linkify = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.split(urlRegex).map((part, i) => {
+      if (part.match(urlRegex)) {
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">{part}</a>;
+      }
+      return part;
+    });
   };
 
   const emojis = ['😀', '😂', '😍', '🤔', '👍', '👎', '❤️', '🔥', '💯', '🎉'];
@@ -284,7 +332,7 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
                 
                 <motion.div
                   className={`flex space-x-3 ${
-                    message.author.id === 'current-user' ? 'flex-row-reverse' : ''
+                    message.author.id === 'current-user' || message.author.id === user?.id ? 'flex-row-reverse' : ''
                   }`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -299,7 +347,7 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
                   </div>
                   
                   <div className={`flex-1 max-w-xs ${
-                    message.author.id === 'current-user' ? 'text-right' : ''
+                    message.author.id === 'current-user' || message.author.id === user?.id ? 'text-right' : ''
                   }`}>
                     <div className="flex items-center space-x-2 mb-1">
                       <span className="text-sm font-medium text-text-primary">
@@ -316,11 +364,40 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
                     </div>
                     
                     <div className={`p-3 rounded-2xl ${
-                      message.author.id === 'current-user'
+                      message.author.id === 'current-user' || message.author.id === user?.id
                         ? 'bg-primary text-white'
                         : 'bg-gray-100 text-text-primary'
                     }`}>
-                      <p className="text-sm">{message.content}</p>
+                      {message.type === 'text' && <p className="text-sm whitespace-pre-wrap">{linkify(message.content)}</p>}
+                      
+                      {message.type === 'image' && (
+                        <div className="relative group">
+                          <img 
+                            src={message.content} 
+                            alt="Imagem enviada" 
+                            className="max-w-full max-h-64 rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
+                            onClick={() => window.open(message.content, '_blank')} 
+                          />
+                        </div>
+                      )}
+                      
+                      {message.type === 'file' && (
+                        <a 
+                          href={message.content} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className={`flex items-center space-x-2 p-2 rounded-lg transition-colors ${
+                            message.author.id === 'current-user' || message.author.id === user?.id
+                              ? 'bg-primary-600 hover:bg-primary-700' 
+                              : 'bg-white hover:bg-gray-200'
+                          }`}
+                        >
+                          <FileText className="w-5 h-5" />
+                          <span className="text-sm underline truncate max-w-[200px]">
+                            {message.content.split('/').pop() || 'Baixar arquivo'}
+                          </span>
+                        </a>
+                      )}
                     </div>
                     
                     {message.reactions && message.reactions.length > 0 && (
@@ -367,12 +444,34 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
 
         {/* Input */}
         <div className="border-t border-gray-200 p-4">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            onChange={(e) => handleFileSelect(e, 'file')} 
+          />
+          <input 
+            type="file" 
+            ref={imageInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={(e) => handleFileSelect(e, 'image')} 
+          />
+          
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                disabled={isUploading}
+              >
                 <Paperclip className="w-5 h-5 text-gray-600" />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <button 
+                onClick={() => imageInputRef.current?.click()}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                disabled={isUploading}
+              >
                 <Image className="w-5 h-5 text-gray-600" />
               </button>
               <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">

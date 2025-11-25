@@ -148,7 +148,7 @@ export default function Layout({ children }: LayoutProps) {
         {/* Notifications */}
         {!sidebarCollapsed && (
           <div className="px-4 py-3">
-            <NotificationBell />
+            <NotificationBell align="left" />
           </div>
         )}
 
@@ -168,9 +168,7 @@ export default function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-        sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
-      }`}>
+      <div className="flex-1 flex flex-col transition-all duration-300 ease-in-out">
         {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <button

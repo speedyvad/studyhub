@@ -183,16 +183,35 @@ export default function Community() {
     }
   };
 
-  const handleJoinGroup = (groupId: string) => {
-    setGroups(prev => prev.map(group =>
-      group.id === groupId
-        ? { ...group, isJoined: !group.isJoined, memberCount: group.isJoined ? group.memberCount - 1 : group.memberCount + 1 }
-        : group
+  const handleJoinGroup = async (groupId: string) => {
+    const group = groups.find(g => g.id === groupId);
+    if (!group) return;
+
+    // Atualização otimista
+    setGroups(prev => prev.map(g =>
+      g.id === groupId
+        ? { ...g, isJoined: !g.isJoined, memberCount: g.isJoined ? g.memberCount - 1 : g.memberCount + 1 }
+        : g
     ));
 
-    const group = groups.find(g => g.id === groupId);
-    if (group) {
-      toast.success(group.isJoined ? 'Você saiu do grupo' : 'Você entrou no grupo! 🎉');
+    try {
+      if (group.isJoined) {
+        await communityApi.leaveGroup(groupId);
+        toast.success('Você saiu do grupo');
+      } else {
+        await communityApi.joinGroup(groupId);
+        toast.success('Você entrou no grupo! 🎉');
+      }
+    } catch (error) {
+      console.error('Erro ao entrar/sair do grupo:', error);
+      toast.error('Erro ao atualizar status do grupo');
+      
+      // Reverter estado em caso de erro
+      setGroups(prev => prev.map(g =>
+        g.id === groupId
+          ? { ...g, isJoined: group.isJoined, memberCount: group.memberCount } // Volta ao original
+          : g
+      ));
     }
   };
 
@@ -335,7 +354,7 @@ export default function Community() {
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <img
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                  src={user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
                   alt="Seu avatar"
                   className="w-10 h-10 rounded-full object-cover"
                 />
@@ -424,12 +443,20 @@ export default function Community() {
                 transition={{ duration: 0.5 }}
               >
                 <div className="flex space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-primary font-semibold">
-                      {/* CORRIGIDO: Adicionado '?.' e fallback '?' */}
-                      {post.user?.name?.charAt(0) || '?'} {/* <--- Correto */}
-                    </span>
-                  </div>
+                  {/* Avatar do usuário ou iniciais */}
+                  {post.user?.avatar || (post.user as any)?.avatarUrl ? (
+                    <img
+                      src={post.user?.avatar || (post.user as any)?.avatarUrl}
+                      alt={post.user?.name || 'Usuário'}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                      <span className="text-primary font-semibold">
+                        {post.user?.name?.charAt(0) || '?'}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
                       {/* CORRIGIDO: Adicionado '?.' e fallback 'Usuário Anônimo' */}

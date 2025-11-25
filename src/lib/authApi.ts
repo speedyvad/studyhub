@@ -10,6 +10,10 @@ export interface UserData {
   level: number;
   role: string;
   createdAt: string;
+  bio?: string;
+  favoriteSubjects?: string[];
+  avatarUrl?: string;
+  avatar?: string; // Manter compatibilidade com frontend que usa 'avatar'
 }
 
 // Interface para resposta da API
@@ -93,6 +97,14 @@ export const authApi = {
   // Obter perfil do usuário
   async getProfile(): Promise<{ success: boolean; data: { user: UserData } }> {
     return authenticatedFetch(`${API_BASE_URL}/auth/profile`);
+  },
+
+  // Atualizar perfil
+  async updateProfile(data: Partial<UserData>): Promise<{ success: boolean; message: string; data: { user: UserData } }> {
+    return authenticatedFetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   },
 
   // Verificar se o usuário está autenticado

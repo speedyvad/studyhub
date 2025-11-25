@@ -17,7 +17,7 @@ interface TaskFormData {
   title: string;
   description: string;
   subject: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
   dueDate?: string;
   tags: string[];
 }
@@ -36,9 +36,9 @@ const subjects = [
 ];
 
 const priorityOptions = [
-  { value: 'low', label: 'Baixa', color: 'text-green-600', bg: 'bg-green-100', icon: '🟢' },
-  { value: 'medium', label: 'Média', color: 'text-yellow-600', bg: 'bg-yellow-100', icon: '🟡' },
-  { value: 'high', label: 'Alta', color: 'text-red-600', bg: 'bg-red-100', icon: '🔴' }
+  { value: 'LOW', label: 'Baixa', color: 'text-green-600', bg: 'bg-green-100', icon: '🟢' },
+  { value: 'MEDIUM', label: 'Média', color: 'text-yellow-600', bg: 'bg-yellow-100', icon: '🟡' },
+  { value: 'HIGH', label: 'Alta', color: 'text-red-600', bg: 'bg-red-100', icon: '🔴' }
 ];
 
 const commonTags = [
@@ -62,7 +62,7 @@ export default function EnhancedTaskForm({
     title: initialData.title || '',
     description: initialData.description || '',
     subject: initialData.subject || 'Matemática',
-    priority: initialData.priority || 'medium',
+    priority: initialData.priority || 'MEDIUM',
     dueDate: initialData.dueDate || '',
     tags: initialData.tags || []
   });
@@ -78,7 +78,7 @@ export default function EnhancedTaskForm({
         title: initialData.title || '',
         description: initialData.description || '',
         subject: initialData.subject || 'Matemática',
-        priority: initialData.priority || 'medium',
+        priority: initialData.priority || 'MEDIUM',
         dueDate: initialData.dueDate || '',
         tags: initialData.tags || []
       });
@@ -91,12 +91,18 @@ export default function EnhancedTaskForm({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(formData);
+      // Converter data vazia para undefined para evitar erro de "Invalid datetime"
+      const dataToSubmit = {
+        ...formData,
+        dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : undefined
+      };
+      
+      await onSubmit(dataToSubmit as any);
       setFormData({
         title: '',
         description: '',
         subject: 'Matemática',
-        priority: 'medium',
+        priority: 'MEDIUM',
         dueDate: '',
         tags: []
       });
