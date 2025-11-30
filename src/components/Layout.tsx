@@ -6,11 +6,14 @@ import {
   CheckSquare, 
   Timer, 
   Users, 
-  BarChart3, 
+  Calendar,
+  BookOpen,
+  Star,
+  Award,
   User,
-  LogOut,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import AchievementNotification from './AchievementNotification';
@@ -25,7 +28,7 @@ const menuItems = [
   { path: '/tasks', icon: CheckSquare, label: 'Tarefas' },
   { path: '/pomodoro', icon: Timer, label: 'Sessão de Foco' },
   { path: '/community', icon: Users, label: 'Comunidade' },
-  { path: '/stats', icon: BarChart3, label: 'Estatísticas' },
+  { path: '/calendar', icon: Calendar, label: 'Calendário' },
   { path: '/profile', icon: User, label: 'Perfil' },
 ];
 

@@ -14,27 +14,34 @@ import {
 } from 'lucide-react';
 import tasksApi from '../lib/tasksApi';
 import pomodoroApi from '../lib/pomodoroApi';
+import communityApi from '../lib/communityApi';
+import type { Post } from '../types/community';
 
 export default function Dashboard() {
   const { user } = useStore();
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0 });
   const [pomodoroStats, setPomodoroStats] = useState({ totalSessions: 0, todaySessions: 0, totalHours: 0 });
+  const [recentPosts, setRecentPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
-        const [tasksResponse, tasksStatsResponse, pomodoroStatsResponse] = await Promise.all([
+        const [tasksResponse, tasksStatsResponse, pomodoroStatsResponse, postsResponse] = await Promise.all([
           tasksApi.getTasks(),
           tasksApi.getStats(),
-          pomodoroApi.getStats()
+          pomodoroApi.getStats(),
+          communityApi.getPosts(3)
         ]);
         
         setTasks(tasksResponse.data.tasks || []);
         setStats(tasksStatsResponse.data);
         setPomodoroStats(pomodoroStatsResponse.data);
+        if (postsResponse.success) {
+            setRecentPosts(postsResponse.data.posts || []);
+        }
       } catch (error) {
         console.error('Erro ao carregar dados do dashboard:', error);
       } finally {
@@ -281,21 +288,6 @@ export default function Dashboard() {
 
         {/* Right sidebar */}
         <div className="space-y-6">
-          {/* Music player placeholder */}
-          <div className="card">
-            <div className="flex items-center space-x-3 mb-4">
-              <Music className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-text-primary">Música para Foco</h3>
-            </div>
-            <div className="bg-gray-100 rounded-lg p-4 text-center">
-              <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                <Music className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-sm text-text-secondary mb-2">Spotify Integration</p>
-              <p className="text-xs text-text-secondary">Em breve</p>
-            </div>
-          </div>
-
           {/* Recent achievements */}
           <div className="card">
             <div className="flex items-center space-x-3 mb-4">
@@ -332,21 +324,39 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="space-y-3">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-primary text-xs font-semibold">C</span>
+              {recentPosts.length > 0 ? (
+                recentPosts.map((post) => (
+                  <div key={post.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-2">
+                      {post.user.avatar ? (
+                        <img 
+                          src={post.user.avatar} 
+                          alt={post.user.name} 
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
+                          <span className="text-primary text-xs font-semibold">
+                            {post.user.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <span className="font-medium text-text-primary text-sm truncate">{post.user.name}</span>
+                    </div>
+                    <p className="text-sm text-text-secondary line-clamp-2">
+                      {post.content}
+                    </p>
+                    <div className="flex items-center space-x-4 mt-2 text-xs text-text-secondary">
+                      <span>❤️ {post.likes}</span>
+                      <span>💬 {post.comments}</span>
+                    </div>
                   </div>
-                  <span className="font-medium text-text-primary text-sm">Comunidade</span>
+                ))
+              ) : (
+                <div className="p-3 bg-gray-50 rounded-lg text-center">
+                    <p className="text-sm text-text-secondary">Nenhum post recente.</p>
                 </div>
-                <p className="text-sm text-text-secondary line-clamp-2">
-                  Conecte-se com outros estudantes e compartilhe conhecimento!
-                </p>
-                <div className="flex items-center space-x-4 mt-2 text-xs text-text-secondary">
-                  <span>❤️ 0</span>
-                  <span>💬 0</span>
-                </div>
-              </div>
+              )}
               <p className="text-sm text-text-secondary text-center py-4">
                 Acesse a comunidade para ver posts recentes
               </p>

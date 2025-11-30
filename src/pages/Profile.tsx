@@ -172,11 +172,19 @@ export default function Profile() {
                   />
                 ) : (
                   <div className="relative inline-block">
-                    <img
-                      src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&crop=face'}
-                      alt={user?.name}
-                      className="w-24 h-24 rounded-full object-cover mx-auto"
-                    />
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-24 h-24 rounded-full object-cover mx-auto"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center mx-auto">
+                        <span className="text-3xl font-bold text-primary">
+                          {user?.name?.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

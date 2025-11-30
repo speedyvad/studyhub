@@ -13,7 +13,7 @@ import Tasks from './pages/Tasks'; // Corrigido
 import FocusSession from './pages/FocusSession'; // Corrigido
 import Pomodoro from './pages/Pomodoro'; // <-- IMPORT FALTANDO ADICIONADO E CORRIGIDO
 import Community from './pages/Community'; // Corrigido
-import Stats from './pages/Stats'; // Corrigido
+import Calendar from './pages/Calendar'; // Importado
 import Profile from './pages/Profile'; // Corrigido
 import Admin from './pages/Admin'; // Corrigido
 import ToastProvider from './components/ToastProvider'; // Corrigido
@@ -114,11 +114,11 @@ function App() {
                 } 
               />
               <Route 
-                path="/stats" 
+                path="/calendar" 
                 element={
                   <ProtectedRoute>
                     <Layout>
-                      <Stats />
+                      <Calendar />
                     </Layout>
                   </ProtectedRoute>
                 } 

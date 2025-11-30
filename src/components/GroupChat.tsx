@@ -138,7 +138,7 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
         const author = {
           id: user?.id || 'current-user',
           name: user?.name || 'Você',
-          avatar: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          avatar: user?.avatar,
           role: 'member' as const
         };
         
@@ -164,7 +164,7 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
     const author = {
       id: user?.id || 'current-user',
       name: user?.name || 'Você',
-      avatar: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      avatar: user?.avatar,
       role: 'member' as const
     };
 
@@ -339,11 +339,19 @@ export default function GroupChat({ groupId, groupName, isOpen, onClose }: Group
                   transition={{ duration: 0.3 }}
                 >
                   <div className="flex-shrink-0">
-                    <img
-                      src={message.author.avatar}
-                      alt={message.author.name}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
+                    {message.author.avatar ? (
+                      <img
+                        src={message.author.avatar}
+                        alt={message.author.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                        <span className="text-primary text-xs font-semibold">
+                          {message.author.name?.charAt(0) || '?'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className={`flex-1 max-w-xs ${
