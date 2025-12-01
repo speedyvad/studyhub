@@ -1,29 +1,27 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useStore } from './store/useStore'; // Corrigido
-import { useEffect, useState } from 'react'; // Importado
-import LoadingSpinner from './components/LoadingSpinner'; // Corrigido
+import { useStore } from './store/useStore';
+import { useEffect, useState } from 'react';
+import LoadingSpinner from './components/LoadingSpinner';
 
 // Componentes
-import Layout from './components/Layout'; // Corrigido
-import Login from './pages/Login'; // Corrigido
-import Register from './pages/Register'; // Corrigido
-import Dashboard from './pages/Dashboard'; // Corrigido
-import Tasks from './pages/Tasks'; // Corrigido
-import FocusSession from './pages/FocusSession'; // Corrigido
-import Pomodoro from './pages/Pomodoro'; // <-- IMPORT FALTANDO ADICIONADO E CORRIGIDO
-import Community from './pages/Community'; // Corrigido
-import Calendar from './pages/Calendar'; // Importado
-import Profile from './pages/Profile'; // Corrigido
-import Admin from './pages/Admin'; // Corrigido
-import ToastProvider from './components/ToastProvider'; // Corrigido
-import ErrorBoundary from './components/ErrorBoundary'; // Corrigido
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Tasks from './pages/Tasks';
+import FocusSession from './pages/FocusSession';
+import Pomodoro from './pages/Pomodoro';
+import Community from './pages/Community';
+import Calendar from './pages/Calendar';
+import Profile from './pages/Profile';
+import Admin from './pages/Admin';
+import ToastProvider from './components/ToastProvider';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Create a client
 const queryClient = new QueryClient();
 
-// --- AppInitializer (ADICIONADO DE VOLTA) ---
-// Isso corrige o chat e os posts anônimos
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const { checkAuth } = useStore();
   const [isInitializing, setIsInitializing] = useState(true);
@@ -51,7 +49,6 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-// --- FIM DO AppInitializer ---
 
 
 // Protected Route Component
@@ -69,7 +66,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppInitializer> {/* <--- ADICIONADO O WRAPPER */}
+      <AppInitializer>
         <Router>
           <div className="App">
             <ToastProvider />
@@ -151,8 +148,7 @@ function App() {
                 path="/pomodoro" 
                 element={
                   <ProtectedRoute>
-                    {/* <Layout> REMOVIDO DAQUI */}
-                    <Pomodoro /> {/* <--- COMPONENTE CORRIGIDO */}
+                    <Pomodoro />
                   </ProtectedRoute>
                 } 
               />
@@ -160,7 +156,6 @@ function App() {
                 path="/focus-session" 
                 element={
                   <ProtectedRoute>
-                    {/* O <Layout> já estava removido (correto) */}
                     <FocusSession />
                   </ProtectedRoute>
                 } 
@@ -180,7 +175,7 @@ function App() {
             </Routes>
           </div>
         </Router>
-      </AppInitializer> {/* <--- FIM DO WRAPPER */}
+      </AppInitializer>
     </QueryClientProvider>
   );
 }

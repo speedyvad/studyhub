@@ -106,7 +106,6 @@ export default function Layout({ children }: LayoutProps) {
             {!sidebarCollapsed && (
               <div>
                 <p className="font-medium text-gray-900 dark:text-gray-100">{user?.name}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{user?.points} pontos</p>
               </div>
             )}
           </div>
@@ -198,9 +197,6 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </main>
       </div>
-
-      {/* Achievement Notifications */}
-      <AchievementNotification />
     </div>
   );
 }

@@ -460,7 +460,7 @@ export default function Community() {
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
                       {/* CORRIGIDO: Adicionado '?.' e fallback 'Usuário Anônimo' */}
-                      <h4 className="font-semibold text-text-primary">{post.user?.name || 'Usuário Anônimo'}</h4> {/* <--- Correto */}
+                      <h4 className="font-semibold text-text-primary">{post.user?.name || 'Usuário Anônimo'}</h4>
 
                       {/* CORRIGIDO: Adicionado '?.' */}
                       {post.user?.verified &&

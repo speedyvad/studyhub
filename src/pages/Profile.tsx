@@ -271,18 +271,6 @@ export default function Profile() {
           <div className="card mt-6">
             <h3 className="font-semibold text-text-primary mb-4">Estatísticas Rápidas</h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-text-primary">Pontos</p>
-                    <p className="text-sm text-text-secondary">Total</p>
-                  </div>
-                </div>
-                <span className="text-xl font-bold text-primary">{user?.points}</span>
-              </div>
               
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -381,45 +369,6 @@ export default function Profile() {
                 <p className="text-2xl font-bold text-secondary">{monthlySessions.length}</p>
                 <p className="text-sm text-text-secondary">Pomodoros</p>
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gamification-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-8 h-8 text-gamification" />
-                </div>
-                <h4 className="font-semibold text-text-primary mb-1">Pontos</h4>
-                <p className="text-2xl font-bold text-gamification">{monthlyPoints}</p>
-                <p className="text-sm text-text-secondary">Ganhos</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Achievements */}
-          <div className="card">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-text-primary">Conquistas</h3>
-              <Award className="w-5 h-5 text-gamification" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {unlockedAchievements.map((achievement) => (
-                <div key={achievement.id} className="p-4 bg-gamification-50 rounded-lg border border-gamification-200">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-3xl">{achievement.icon}</span>
-                    <div>
-                      <h4 className="font-semibold text-text-primary">{achievement.title}</h4>
-                      <p className="text-sm text-text-secondary">{achievement.description}</p>
-                      <p className="text-xs text-gamification font-medium">
-                        +{achievement.points} pontos
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {unlockedAchievements.length === 0 && (
-                <div className="col-span-2 text-center py-8">
-                  <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-text-secondary">Nenhuma conquista desbloqueada ainda.</p>
-                  <p className="text-sm text-text-secondary">Continue estudando para desbloquear conquistas!</p>
-                </div>
-              )}
             </div>
           </div>
 

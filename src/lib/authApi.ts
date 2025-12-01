@@ -1,6 +1,6 @@
 const API_BASE_URL = 'http://localhost:3001/api';
 
-// Interface para dados do usuário
+
 export interface UserData {
   id: string;
   name: string;
@@ -13,7 +13,7 @@ export interface UserData {
   bio?: string;
   favoriteSubjects?: string[];
   avatarUrl?: string;
-  avatar?: string; // Manter compatibilidade com frontend que usa 'avatar'
+  avatar?: string; 
 }
 
 // Interface para resposta da API
